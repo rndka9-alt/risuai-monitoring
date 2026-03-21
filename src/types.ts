@@ -11,18 +11,35 @@ export interface LogEntry {
   meta?: Record<string, unknown>;
 }
 
-export interface HealthStatus {
-  proxy: ProxyName;
-  status: 'up' | 'down' | 'unknown';
-  latency?: number;
-  details?: Record<string, unknown>;
+export interface ContainerStats {
+  cpuPercent: number;
+  memoryUsageMB: number;
+  memoryLimitMB: number;
+  running: boolean;
 }
 
-export interface ProxyMetrics {
+export interface ProxyHealth {
   proxy: ProxyName;
+  status: 'up' | 'down' | 'unknown';
+  latencyMs: number;
+  details?: Record<string, unknown>;
+  container?: ContainerStats;
+}
+
+export interface MetricPoint {
+  timestamp: number;
   rps: number;
   errorRate: number;
-  p50: number;
-  p95: number;
-  p99: number;
+  ttfbP50: number;
+  ttfbP95: number;
+}
+
+export interface MetricsSeries {
+  proxy: ProxyName;
+  points: MetricPoint[];
+}
+
+export interface MetricsSnapshot {
+  windowMinutes: number;
+  series: MetricsSeries[];
 }

@@ -15,4 +15,6 @@ export const config = {
   logBufferSize: Number(process.env.LOG_BUFFER_SIZE) || 5000,
   reconnectIntervalMs: 5000,
   tailLines: 100,
+  healthIntervalMs: 10_000,
+  metricsWindowMinutes: 60,
 };

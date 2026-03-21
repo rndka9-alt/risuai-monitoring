@@ -6,6 +6,8 @@ import { logger } from './logger.js';
 import { LogCollector } from './log-collector.js';
 import { addLog, getRecentLogs } from './log-store.js';
 import { handleLogStream } from './sse.js';
+import { startHealthPoller, getHealth } from './health-poller.js';
+import { startMetricsAggregator, getMetrics } from './metrics-aggregator.js';
 
 const DIST_CLIENT = path.join(import.meta.dirname, 'client');
 
@@ -33,6 +35,11 @@ const server = http.createServer((req, res) => {
   serveStatic(url.pathname, res);
 });
 
+function sendJson(res: http.ServerResponse, data: unknown): void {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
 function handleApi(
   url: URL,
   req: http.IncomingMessage,
@@ -57,14 +64,17 @@ function handleApi(
       logs = logs.filter((l) => l.level === level);
     }
 
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(logs));
+    sendJson(res, logs);
     return;
   }
 
   if (url.pathname === '/api/health') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'ok' }));
+    sendJson(res, getHealth());
+    return;
+  }
+
+  if (url.pathname === '/api/metrics') {
+    sendJson(res, getMetrics());
     return;
   }
 
@@ -95,4 +105,6 @@ function serveStatic(pathname: string, res: http.ServerResponse) {
 server.listen(config.port, () => {
   logger.info(`Server listening on :${config.port}`);
   collector.start();
+  startMetricsAggregator(collector);
+  startHealthPoller();
 });

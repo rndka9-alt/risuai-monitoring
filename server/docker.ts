@@ -12,6 +12,15 @@ export function dockerGet(path: string): Promise<http.IncomingMessage> {
   });
 }
 
+export function readBody(response: http.IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    response.on('data', (chunk: string) => (body += chunk));
+    response.on('end', () => resolve(body));
+    response.on('error', reject);
+  });
+}
+
 export function demuxDockerStream(
   response: http.IncomingMessage,
   onLine: (stream: 'stdout' | 'stderr', line: string) => void,
