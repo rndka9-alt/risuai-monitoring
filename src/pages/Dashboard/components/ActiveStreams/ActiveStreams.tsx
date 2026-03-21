@@ -38,16 +38,19 @@ function formatTimeAgo(completedAt: number): string {
 function StreamRow({
   stream,
   isActive,
+  expanded,
+  onToggle,
 }: {
   stream: StreamEntry;
   isActive: boolean;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="border-b border-gray-800/50 last:border-b-0">
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={onToggle}
         className={`flex items-center gap-3 px-3 py-1.5 text-xs w-full text-left hover:bg-white/[0.02] transition-colors ${
           isActive ? '' : 'opacity-50'
         }`}
@@ -176,6 +179,7 @@ function StreamRow({
 }
 
 export function ActiveStreams() {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const { data } = useStreams();
 
   const active = data?.active ?? [];
@@ -190,7 +194,7 @@ export function ActiveStreams() {
       <div className="rounded-lg bg-gray-900 border border-purple-500/20 overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800">
           <span className="text-xs font-medium text-purple-300">
-            LLM Streams
+            LLM Requests
           </span>
           {hasActive && (
             <span className="text-xs text-green-400 tabular-nums">
@@ -204,10 +208,22 @@ export function ActiveStreams() {
           )}
         </div>
         {active.map((stream) => (
-          <StreamRow key={stream.id} stream={stream} isActive />
+          <StreamRow
+            key={stream.id}
+            stream={stream}
+            isActive
+            expanded={expandedId === stream.id}
+            onToggle={() => setExpandedId(expandedId === stream.id ? null : stream.id)}
+          />
         ))}
         {recent.map((stream) => (
-          <StreamRow key={stream.id} stream={stream} isActive={false} />
+          <StreamRow
+            key={stream.id}
+            stream={stream}
+            isActive={false}
+            expanded={expandedId === stream.id}
+            onToggle={() => setExpandedId(expandedId === stream.id ? null : stream.id)}
+          />
         ))}
       </div>
     </div>
