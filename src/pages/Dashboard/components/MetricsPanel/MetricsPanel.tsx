@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   LineChart,
   Line,
@@ -7,12 +8,8 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import { useMetrics } from '@/hooks/useMetrics';
 import type { MetricsSnapshot, ProxyName } from '@/types';
-
-interface MetricsPanelProps {
-  metrics: MetricsSnapshot | undefined;
-  isLoading: boolean;
-}
 
 const PROXY_STROKE: Record<ProxyName, string> = {
   sync: '#a855f7',
@@ -22,6 +19,18 @@ const PROXY_STROKE: Record<ProxyName, string> = {
 };
 
 const PROXIES: readonly ProxyName[] = ['sync', 'db-proxy', 'caddy', 'risuai'];
+
+const BUCKET_OPTIONS = ['5s', '10s', '30s', '60s', '1h'] as const;
+
+// 버킷 크기별 표시할 최대 포인트 수 → 차트 시간 범위 결정
+// 5s × 120 = 10분, 10s × 120 = 20분, 30s × 60 = 30분, 60s × 60 = 1시간, 1h × 6 = 6시간
+const BUCKET_MAX_POINTS: Record<string, number> = {
+  '5s': 120,
+  '10s': 120,
+  '30s': 60,
+  '60s': 60,
+  '1h': 6,
+};
 
 interface MergedPoint {
   timestamp: number;
@@ -112,29 +121,49 @@ function ChartCard({ title, data, unit }: ChartCardProps) {
   );
 }
 
-export function MetricsPanel({ metrics, isLoading }: MetricsPanelProps) {
-  if (isLoading || !metrics) {
-    return (
-      <div className="grid grid-cols-3 gap-3 px-4 py-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-[196px] rounded-lg bg-gray-900 animate-pulse"
-          />
-        ))}
-      </div>
-    );
-  }
-
-  const rpsData = mergeSeriesFor(metrics, 'rps');
-  const ttfbData = mergeSeriesFor(metrics, 'ttfbP50');
-  const errorData = mergeSeriesFor(metrics, 'errorRate');
+export function MetricsPanel() {
+  const [bucket, setBucket] = useState('60s');
+  const { data: metrics, isLoading } = useMetrics(bucket);
 
   return (
-    <div className="grid grid-cols-3 gap-3 px-4 py-3">
-      <ChartCard title="RPS (req/s)" data={rpsData} unit=" r/s" />
-      <ChartCard title="TTFB p50 (ms)" data={ttfbData} unit="ms" />
-      <ChartCard title="Error Rate" data={errorData} />
+    <div>
+      {/* Bucket selector */}
+      <div className="flex items-center gap-2 px-4 pt-3 pb-1">
+        <span className="text-xs text-gray-500">Bucket</span>
+        <div className="flex gap-1">
+          {BUCKET_OPTIONS.map((opt) => (
+            <button
+              key={opt}
+              onClick={() => setBucket(opt)}
+              className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                bucket === opt
+                  ? 'bg-gray-700 text-gray-200'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Charts */}
+      {isLoading || !metrics ? (
+        <div className="grid grid-cols-3 gap-3 px-4 py-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-[196px] rounded-lg bg-gray-900 animate-pulse"
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-3 px-4 py-3">
+          <ChartCard title="RPS (req/s)" data={mergeSeriesFor(metrics, 'rps').slice(-(BUCKET_MAX_POINTS[bucket] ?? 60))} unit=" r/s" />
+          <ChartCard title="TTFB p50 (ms)" data={mergeSeriesFor(metrics, 'ttfbP50').slice(-(BUCKET_MAX_POINTS[bucket] ?? 60))} unit="ms" />
+          <ChartCard title="Error Rate" data={mergeSeriesFor(metrics, 'errorRate').slice(-(BUCKET_MAX_POINTS[bucket] ?? 60))} />
+        </div>
+      )}
     </div>
   );
 }

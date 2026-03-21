@@ -1,6 +1,5 @@
 import { useLogStream } from '@/hooks/useLogStream';
 import { useHealth } from '@/hooks/useHealth';
-import { useMetrics } from '@/hooks/useMetrics';
 import { LogViewer } from './components/LogViewer';
 import { HealthBar } from './components/HealthBar';
 import { MetricsPanel } from './components/MetricsPanel';
@@ -8,7 +7,6 @@ import { MetricsPanel } from './components/MetricsPanel';
 export function Dashboard() {
   const { logs, connected } = useLogStream();
   const { data: health, isLoading: healthLoading } = useHealth();
-  const { data: metrics, isLoading: metricsLoading } = useMetrics();
 
   return (
     <div className="h-screen flex flex-col bg-gray-950 text-gray-100">
@@ -21,7 +19,7 @@ export function Dashboard() {
       </section>
 
       <section className="shrink-0 border-b border-gray-800">
-        <MetricsPanel metrics={metrics} isLoading={metricsLoading} />
+        <MetricsPanel />
       </section>
 
       <main className="flex-1 overflow-hidden relative">

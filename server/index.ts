@@ -7,7 +7,7 @@ import { LogCollector } from './log-collector.js';
 import { addLog, getRecentLogs } from './log-store.js';
 import { handleLogStream } from './sse.js';
 import { startHealthPoller, getHealth } from './health-poller.js';
-import { startMetricsAggregator, getMetrics } from './metrics-aggregator.js';
+import { startMetricsAggregator, getMetrics, parseBucketSize } from './metrics-aggregator.js';
 
 const DIST_CLIENT = path.join(import.meta.dirname, 'client');
 
@@ -74,7 +74,8 @@ function handleApi(
   }
 
   if (url.pathname === '/api/metrics') {
-    sendJson(res, getMetrics());
+    const bucketMs = parseBucketSize(url.searchParams.get('bucket'));
+    sendJson(res, getMetrics(bucketMs));
     return;
   }
 
