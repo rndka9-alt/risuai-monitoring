@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { LogEntry } from '@/types';
 
-const MAX_CLIENT_LOGS = 1000;
+const MAX_CLIENT_LOGS = 5000;
 
 interface UseLogStreamResult {
   logs: LogEntry[];
