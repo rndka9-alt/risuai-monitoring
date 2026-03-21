@@ -79,6 +79,7 @@ function ChartCard({ title, data, unit }: ChartCardProps) {
             width={35}
           />
           <Tooltip
+            wrapperStyle={{ zIndex: 'var(--z-tooltip)' }}
             contentStyle={{
               background: '#111827',
               border: '1px solid #374151',
