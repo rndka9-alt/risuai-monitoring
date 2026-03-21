@@ -120,6 +120,12 @@ function StreamRow({
                 <span className="text-gray-300">{stream.messageCount}</span>
               </div>
             )}
+            {stream.imageCount > 0 && (
+              <div>
+                <span className="text-gray-500">Images </span>
+                <span className="text-amber-300">{stream.imageCount}</span>
+              </div>
+            )}
             <div>
               <span className="text-gray-500">Output </span>
               <span className="text-gray-300">
@@ -139,11 +145,18 @@ function StreamRow({
             )}
           </div>
 
-          {stream.inputPreview && (
+          {stream.requestBody && (
             <div>
-              <div className="text-[11px] text-gray-500 mb-0.5">Input (last user message)</div>
-              <pre className="text-[11px] text-gray-400 bg-gray-950 rounded p-2 max-h-24 overflow-y-auto whitespace-pre-wrap break-all leading-relaxed">
-                {stream.inputPreview}
+              <div className="text-[11px] text-gray-500 mb-0.5">
+                Request Body
+                {stream.imageCount > 0 && (
+                  <span className="text-amber-400 ml-1">
+                    +{stream.imageCount} image{stream.imageCount > 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+              <pre className="text-[11px] text-gray-400 bg-gray-950 rounded p-2 max-h-40 overflow-y-auto whitespace-pre-wrap break-all leading-relaxed">
+                {stream.requestBody}
               </pre>
             </div>
           )}

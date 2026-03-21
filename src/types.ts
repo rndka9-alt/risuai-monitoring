@@ -36,8 +36,9 @@ export interface StreamEntry {
   elapsedMs: number;
   targetUrl: string;
   model: string;
-  inputPreview: string;
+  requestBody: string;
   messageCount: number;
+  imageCount: number;
   outputPreview: string;
   completedAt: number | null;
 }

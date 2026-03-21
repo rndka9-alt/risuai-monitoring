@@ -6,8 +6,9 @@ import { logger } from './logger.js';
 import { LogCollector } from './log-collector.js';
 import { addLog, getRecentLogs } from './log-store.js';
 import { handleLogStream } from './sse.js';
-import { startHealthPoller, getHealth, getStreams } from './health-poller.js';
+import { startHealthPoller, getHealth } from './health-poller.js';
 import { startMetricsAggregator, getMetrics, parseBucketSize } from './metrics-aggregator.js';
+import { handleLlmEvent, getStreams } from './llm-store.js';
 
 const DIST_CLIENT = path.join(import.meta.dirname, 'client');
 
@@ -27,7 +28,7 @@ collector.on('log', (entry) => addLog(entry));
 const server = http.createServer((req, res) => {
   const url = new URL(req.url ?? '/', `http://localhost`);
 
-  if (url.pathname.startsWith('/api/')) {
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/_api/')) {
     handleApi(url, req, res);
     return;
   }
@@ -40,11 +41,36 @@ function sendJson(res: http.ServerResponse, data: unknown): void {
   res.end(JSON.stringify(data));
 }
 
+function readRequestBody(req: http.IncomingMessage): Promise<string> {
+  return new Promise((resolve) => {
+    let body = '';
+    req.on('data', (chunk: string) => (body += chunk));
+    req.on('end', () => resolve(body));
+  });
+}
+
 function handleApi(
   url: URL,
   req: http.IncomingMessage,
   res: http.ServerResponse,
 ) {
+  // Push endpoint from sync → monitor
+  if (url.pathname === '/_api/llm-event' && req.method === 'POST') {
+    readRequestBody(req).then((body) => {
+      try {
+        const event: unknown = JSON.parse(body);
+        if (typeof event === 'object' && event !== null) {
+          handleLlmEvent(event as Record<string, unknown>);
+        }
+      } catch {
+        // ignore malformed
+      }
+      res.writeHead(200);
+      res.end('ok');
+    });
+    return;
+  }
+
   if (url.pathname === '/api/logs/stream') {
     handleLogStream(req, res, collector);
     return;
