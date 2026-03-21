@@ -13,12 +13,13 @@ import type { MetricsSnapshot, ProxyName } from '@/types';
 
 const PROXY_STROKE: Record<ProxyName, string> = {
   sync: '#a855f7',
-  'db-proxy': '#10b981',
+  'with-sqlite': '#10b981',
+  'remote-inlay': '#ec4899',
   caddy: '#06b6d4',
   risuai: '#f97316',
 };
 
-const PROXIES: readonly ProxyName[] = ['sync', 'db-proxy', 'caddy', 'risuai'];
+const PROXIES: readonly ProxyName[] = ['sync', 'with-sqlite', 'remote-inlay', 'caddy', 'risuai'];
 
 const BUCKET_OPTIONS = ['5s', '10s', '30s', '60s', '1h'] as const;
 

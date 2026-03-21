@@ -12,7 +12,8 @@ interface HealthTarget {
 
 const TARGETS: readonly HealthTarget[] = [
   { proxy: 'sync', containerName: 'sync', healthUrl: 'http://sync:3000/sync/health' },
-  { proxy: 'db-proxy', containerName: 'with-sqlite', healthUrl: 'http://with-sqlite:3001/' },
+  { proxy: 'with-sqlite', containerName: 'with-sqlite', healthUrl: 'http://with-sqlite:3001/' },
+  { proxy: 'remote-inlay', containerName: 'remote-inlay', healthUrl: 'http://remote-inlay:3002/' },
   { proxy: 'caddy', containerName: 'caddy', healthUrl: 'http://caddy:80/' },
   { proxy: 'risuai', containerName: 'risuai', healthUrl: 'http://risuai:6001/' },
 ];

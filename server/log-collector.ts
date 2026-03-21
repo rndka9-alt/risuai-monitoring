@@ -12,7 +12,8 @@ interface ContainerTarget {
 
 const TARGETS: readonly ContainerTarget[] = [
   { containerName: 'sync', proxy: 'sync' },
-  { containerName: 'with-sqlite', proxy: 'db-proxy' },
+  { containerName: 'with-sqlite', proxy: 'with-sqlite' },
+  { containerName: 'remote-inlay', proxy: 'remote-inlay' },
   { containerName: 'caddy', proxy: 'caddy' },
   { containerName: 'risuai', proxy: 'risuai' },
 ];
@@ -88,7 +89,7 @@ export class LogCollector extends EventEmitter {
     logger.info(`Streaming logs from ${target.containerName}`);
 
     const supportsContinuation =
-      target.proxy === 'sync' || target.proxy === 'db-proxy';
+      target.proxy === 'sync' || target.proxy === 'with-sqlite' || target.proxy === 'remote-inlay';
 
     return new Promise((resolve) => {
       let pendingEntry: LogEntry | null = null;

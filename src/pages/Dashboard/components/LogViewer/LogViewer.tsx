@@ -7,7 +7,7 @@ interface LogViewerProps {
 }
 
 const LEVELS: readonly LogLevel[] = ['debug', 'info', 'warn', 'error'];
-const PROXIES: readonly ProxyName[] = ['sync', 'db-proxy', 'caddy', 'risuai'];
+const PROXIES: readonly ProxyName[] = ['sync', 'with-sqlite', 'remote-inlay', 'caddy', 'risuai'];
 
 const LEVEL_COLORS: Record<LogLevel, string> = {
   debug: 'text-gray-400',
@@ -18,7 +18,8 @@ const LEVEL_COLORS: Record<LogLevel, string> = {
 
 const PROXY_COLORS: Record<ProxyName, string> = {
   sync: 'bg-purple-500/20 text-purple-300',
-  'db-proxy': 'bg-emerald-500/20 text-emerald-300',
+  'with-sqlite': 'bg-emerald-500/20 text-emerald-300',
+  'remote-inlay': 'bg-pink-500/20 text-pink-300',
   caddy: 'bg-cyan-500/20 text-cyan-300',
   risuai: 'bg-orange-500/20 text-orange-300',
 };
@@ -131,7 +132,7 @@ export function LogViewer({ logs, connected }: LogViewerProps) {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto font-mono text-[13px] leading-5"
+        className="flex-1 overflow-y-auto scrollbar-hide font-mono text-[13px] leading-5"
       >
         {filteredLogs.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-600">

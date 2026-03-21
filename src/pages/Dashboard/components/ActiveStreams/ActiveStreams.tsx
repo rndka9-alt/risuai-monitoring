@@ -208,7 +208,7 @@ function StreamRow({
               <div className="text-[11px] text-gray-500 mb-0.5">
                 Request Body
               </div>
-              <pre className="text-[11px] text-gray-400 bg-gray-950 rounded p-2 max-h-40 overflow-y-auto whitespace-pre-wrap break-all leading-relaxed">
+              <pre className="text-[11px] text-gray-400 bg-gray-950 rounded p-2 max-h-40 overflow-y-auto scrollbar-hide whitespace-pre-wrap break-all leading-relaxed">
                 {stream.requestBody}
               </pre>
             </div>
@@ -217,7 +217,7 @@ function StreamRow({
           {stream.outputPreview && (
             <div>
               <div className="text-[11px] text-gray-500 mb-0.5">Output</div>
-              <pre className="text-[11px] text-gray-400 bg-gray-950 rounded p-2 max-h-24 overflow-y-auto whitespace-pre-wrap break-all leading-relaxed">
+              <pre className="text-[11px] text-gray-400 bg-gray-950 rounded p-2 max-h-24 overflow-y-auto scrollbar-hide whitespace-pre-wrap break-all leading-relaxed">
                 {stream.outputPreview}
               </pre>
             </div>

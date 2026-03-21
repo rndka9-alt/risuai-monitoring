@@ -16,6 +16,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 const SYNC_RE = /^\[Sync\]\s+\[(\w+)\]\s+(.+)$/;
 const DB_PROXY_RE = /^\[DB-Proxy\]\s+\[(\w+)\]\s+(.+)$/;
+const REMOTE_INLAY_RE = /^\[remote-inlay\]\s+\[(\w+)\]\s+(.+)$/;
 const META_RE = /^\s{2}(\S+):\s+(.+)$/;
 
 function parseBracketedLine(re: RegExp, line: string): ParseResult | null {
@@ -66,8 +67,11 @@ export function parseLogLine(
     case 'sync':
       result = parseBracketedLine(SYNC_RE, line);
       break;
-    case 'db-proxy':
+    case 'with-sqlite':
       result = parseBracketedLine(DB_PROXY_RE, line);
+      break;
+    case 'remote-inlay':
+      result = parseBracketedLine(REMOTE_INLAY_RE, line);
       break;
     case 'caddy':
       result = parseCaddyLine(line);

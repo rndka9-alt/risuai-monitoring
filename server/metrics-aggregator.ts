@@ -22,7 +22,7 @@ type ProxyBuckets = Map<number, Bucket>;
 
 const allBuckets = new Map<ProxyName, ProxyBuckets>();
 
-const PROXIES: readonly ProxyName[] = ['sync', 'db-proxy', 'caddy', 'risuai'];
+const PROXIES: readonly ProxyName[] = ['sync', 'with-sqlite', 'remote-inlay', 'caddy', 'risuai'];
 
 function getBucket(proxy: ProxyName, timestamp: number): Bucket {
   let proxyMap = allBuckets.get(proxy);

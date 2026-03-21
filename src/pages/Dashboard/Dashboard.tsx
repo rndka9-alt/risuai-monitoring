@@ -23,7 +23,7 @@ export function Dashboard() {
         <MetricsPanel />
       </section>
 
-      <section className="shrink-0 border-b border-gray-800 max-h-72 overflow-y-auto">
+      <section className="shrink-0 border-b border-gray-800 max-h-72 overflow-y-auto scrollbar-hide">
         <ActiveStreams />
       </section>
 

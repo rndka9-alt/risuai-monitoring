@@ -1,6 +1,6 @@
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-export type ProxyName = 'sync' | 'db-proxy' | 'caddy' | 'risuai';
+export type ProxyName = 'sync' | 'with-sqlite' | 'remote-inlay' | 'caddy' | 'risuai';
 
 export interface LogEntry {
   id: string;
