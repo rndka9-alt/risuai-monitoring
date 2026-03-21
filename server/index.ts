@@ -6,7 +6,7 @@ import { logger } from './logger.js';
 import { LogCollector } from './log-collector.js';
 import { addLog, getRecentLogs } from './log-store.js';
 import { handleLogStream } from './sse.js';
-import { startHealthPoller, getHealth } from './health-poller.js';
+import { startHealthPoller, getHealth, getStreams } from './health-poller.js';
 import { startMetricsAggregator, getMetrics, parseBucketSize } from './metrics-aggregator.js';
 
 const DIST_CLIENT = path.join(import.meta.dirname, 'client');
@@ -70,6 +70,11 @@ function handleApi(
 
   if (url.pathname === '/api/health') {
     sendJson(res, getHealth());
+    return;
+  }
+
+  if (url.pathname === '/api/streams') {
+    sendJson(res, getStreams());
     return;
   }
 

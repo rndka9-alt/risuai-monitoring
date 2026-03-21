@@ -26,6 +26,28 @@ export interface ProxyHealth {
   container?: ContainerStats;
 }
 
+export interface StreamEntry {
+  id: string;
+  senderClientId: string;
+  targetCharId: string | null;
+  status: string;
+  textLength: number;
+  createdAt: number;
+  elapsedMs: number;
+  targetUrl: string;
+  model: string;
+  inputPreview: string;
+  messageCount: number;
+  outputPreview: string;
+  completedAt: number | null;
+}
+
+export interface StreamsSnapshot {
+  active: StreamEntry[];
+  recent: StreamEntry[];
+  total: number;
+}
+
 export interface MetricPoint {
   timestamp: number;
   rps: number;

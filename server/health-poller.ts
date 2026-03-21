@@ -2,7 +2,7 @@ import http from 'node:http';
 import { config } from './config.js';
 import { logger } from './logger.js';
 import { dockerGet, readBody } from './docker.js';
-import type { ProxyName, ProxyHealth, ContainerStats } from '../src/types.js';
+import type { ProxyName, ProxyHealth, ContainerStats, StreamsSnapshot, StreamEntry } from '../src/types.js';
 
 interface HealthTarget {
   proxy: ProxyName;
@@ -25,6 +25,12 @@ let latestHealth: ProxyHealth[] = TARGETS.map((t) => ({
   latencyMs: 0,
 }));
 
+const MAX_RECENT_STREAMS = 10;
+
+let latestStreams: StreamsSnapshot = { active: [], recent: [], total: 0 };
+let previousActiveIds = new Set<string>();
+let recentStreams: StreamEntry[] = [];
+
 let timer: ReturnType<typeof setInterval> | null = null;
 
 export function startHealthPoller(): void {
@@ -44,9 +50,75 @@ export function getHealth(): readonly ProxyHealth[] {
   return latestHealth;
 }
 
+export function getStreams(): StreamsSnapshot {
+  return latestStreams;
+}
+
 async function poll(): Promise<void> {
-  const results = await Promise.all(TARGETS.map(pollTarget));
-  latestHealth = results;
+  const [healthResults, rawStreams] = await Promise.all([
+    Promise.all(TARGETS.map(pollTarget)),
+    pollStreams(),
+  ]);
+  latestHealth = healthResults;
+
+  // active에서 사라진 스트림을 recent로 이동 (monitor 자체 관리)
+  const currentActiveIds = new Set(rawStreams.map((s) => s.id));
+  const previousActive = latestStreams.active;
+
+  for (const prev of previousActive) {
+    if (!currentActiveIds.has(prev.id)) {
+      // 완료로 간주, recent에 추가
+      recentStreams.unshift({
+        ...prev,
+        status: 'completed',
+        completedAt: Date.now(),
+      });
+    }
+  }
+  recentStreams = recentStreams.slice(0, MAX_RECENT_STREAMS);
+
+  latestStreams = {
+    active: rawStreams,
+    recent: recentStreams,
+    total: rawStreams.length,
+  };
+}
+
+async function pollStreams(): Promise<StreamEntry[]> {
+  try {
+    const response = await new Promise<http.IncomingMessage>((resolve, reject) => {
+      const req = http.request(
+        {
+          hostname: 'sync',
+          port: 3000,
+          path: '/_internal/streams',
+          method: 'GET',
+          timeout: HEALTH_TIMEOUT_MS,
+        },
+        resolve,
+      );
+      req.on('error', reject);
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('timeout'));
+      });
+      req.end();
+    });
+
+    if (response.statusCode !== 200) {
+      response.resume();
+      return [];
+    }
+
+    const body = await readBody(response);
+    const parsed: unknown = JSON.parse(body);
+    if (isRecord(parsed) && Array.isArray(parsed.active)) {
+      return parsed.active;
+    }
+    return [];
+  } catch {
+    return [];
+  }
 }
 
 async function pollTarget(target: HealthTarget): Promise<ProxyHealth> {

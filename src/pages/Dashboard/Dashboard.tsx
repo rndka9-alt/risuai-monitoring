@@ -3,6 +3,7 @@ import { useHealth } from '@/hooks/useHealth';
 import { LogViewer } from './components/LogViewer';
 import { HealthBar } from './components/HealthBar';
 import { MetricsPanel } from './components/MetricsPanel';
+import { ActiveStreams } from './components/ActiveStreams';
 
 export function Dashboard() {
   const { logs, connected } = useLogStream();
@@ -20,6 +21,10 @@ export function Dashboard() {
 
       <section className="shrink-0 border-b border-gray-800">
         <MetricsPanel />
+      </section>
+
+      <section className="shrink-0 border-b border-gray-800 max-h-72 overflow-y-auto">
+        <ActiveStreams />
       </section>
 
       <main className="flex-1 overflow-hidden relative">
