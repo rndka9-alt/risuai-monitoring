@@ -8,7 +8,7 @@ import { addLog, getRecentLogs } from './log-store.js';
 import { handleLogStream } from './sse.js';
 import { startHealthPoller, getHealth } from './health-poller.js';
 import { startMetricsAggregator, getMetrics, parseBucketSize } from './metrics-aggregator.js';
-import { handleLlmEvent, getStreams } from './llm-store.js';
+import { handleLlmEvent, getStreams, getStreamImages } from './llm-store.js';
 
 const DIST_CLIENT = path.join(import.meta.dirname, 'client');
 
@@ -101,6 +101,12 @@ function handleApi(
 
   if (url.pathname === '/api/streams') {
     sendJson(res, getStreams());
+    return;
+  }
+
+  const imagesMatch = url.pathname.match(/^\/api\/streams\/([^/]+)\/images$/);
+  if (imagesMatch) {
+    sendJson(res, getStreamImages(imagesMatch[1]));
     return;
   }
 

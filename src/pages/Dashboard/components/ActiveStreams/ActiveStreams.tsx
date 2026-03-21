@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStreams } from '@/hooks/useStreams';
+import { useStreamImages } from '@/hooks/useStreamImages';
 import type { StreamEntry } from '@/types';
 
 function formatElapsed(ms: number): string {
@@ -33,6 +34,58 @@ function formatTimeAgo(completedAt: number): string {
   if (ago < 60) return `${ago}s ago`;
   if (ago < 3600) return `${Math.floor(ago / 60)}m ago`;
   return `${Math.floor(ago / 3600)}h ago`;
+}
+
+function StreamImages({ streamId }: { streamId: string }) {
+  const { data: images, isLoading } = useStreamImages(streamId);
+
+  if (isLoading) {
+    return <div className="text-[11px] text-gray-600">Loading images...</div>;
+  }
+
+  if (!images || images.length === 0) return null;
+
+  const inputImages = images.filter((img) => !img.isOutput);
+  const outputImages = images.filter((img) => img.isOutput);
+
+  return (
+    <>
+      {inputImages.length > 0 && (
+        <div>
+          <div className="text-[11px] text-gray-500 mb-1">
+            Input Images ({inputImages.length})
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {inputImages.map((img, i) => (
+              <img
+                key={`in-${i}`}
+                src={`data:${img.mediaType};base64,${img.data}`}
+                alt={`Input image ${i + 1}`}
+                className="max-h-32 max-w-48 rounded border border-gray-700 object-contain bg-gray-950"
+              />
+            ))}
+          </div>
+        </div>
+      )}
+      {outputImages.length > 0 && (
+        <div>
+          <div className="text-[11px] text-gray-500 mb-1">
+            Output Image
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {outputImages.map((img, i) => (
+              <img
+                key={`out-${i}`}
+                src={`data:${img.mediaType};base64,${img.data}`}
+                alt={`Output image ${i + 1}`}
+                className="max-h-48 max-w-64 rounded border border-purple-500/30 object-contain bg-gray-950"
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 function StreamRow({
@@ -148,15 +201,12 @@ function StreamRow({
             )}
           </div>
 
+          <StreamImages streamId={stream.id} />
+
           {stream.requestBody && (
             <div>
               <div className="text-[11px] text-gray-500 mb-0.5">
                 Request Body
-                {stream.imageCount > 0 && (
-                  <span className="text-amber-400 ml-1">
-                    +{stream.imageCount} image{stream.imageCount > 1 ? 's' : ''}
-                  </span>
-                )}
               </div>
               <pre className="text-[11px] text-gray-400 bg-gray-950 rounded p-2 max-h-40 overflow-y-auto whitespace-pre-wrap break-all leading-relaxed">
                 {stream.requestBody}
