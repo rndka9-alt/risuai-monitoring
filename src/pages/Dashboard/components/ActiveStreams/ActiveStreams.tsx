@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useStreams } from '@/hooks/useStreams';
 import { useStreamImages } from '@/hooks/useStreamImages';
+import { JsonTree } from '@/components/JsonTree';
 import type { StreamEntry } from '@/types';
 
 function formatElapsed(ms: number): string {
@@ -34,6 +35,42 @@ function formatTimeAgo(completedAt: number): string {
   if (ago < 60) return `${ago}s ago`;
   if (ago < 3600) return `${Math.floor(ago / 60)}m ago`;
   return `${Math.floor(ago / 3600)}h ago`;
+}
+
+function RequestBody({ raw }: { raw: string }) {
+  const [showRaw, setShowRaw] = useState(false);
+  const parsed = useMemo(() => {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }, [raw]);
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-0.5">
+        <span className="text-[11px] text-gray-500">Request Body</span>
+        {parsed && (
+          <button
+            onClick={() => setShowRaw(!showRaw)}
+            className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
+          >
+            {showRaw ? 'Tree' : 'Raw'}
+          </button>
+        )}
+      </div>
+      <div className="bg-gray-950 rounded p-2 max-h-48 overflow-y-auto scrollbar-hide">
+        {parsed && !showRaw ? (
+          <JsonTree data={parsed} defaultExpandLevel={1} />
+        ) : (
+          <pre className="text-[11px] text-gray-400 whitespace-pre-wrap break-words leading-relaxed">
+            {parsed ? JSON.stringify(parsed, null, 2) : raw}
+          </pre>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function StreamImages({ streamId }: { streamId: string }) {
@@ -204,20 +241,13 @@ function StreamRow({
           <StreamImages streamId={stream.id} />
 
           {stream.requestBody && (
-            <div>
-              <div className="text-[11px] text-gray-500 mb-0.5">
-                Request Body
-              </div>
-              <pre className="text-[11px] text-gray-400 bg-gray-950 rounded p-2 max-h-40 overflow-y-auto scrollbar-hide whitespace-pre-wrap break-all leading-relaxed">
-                {stream.requestBody}
-              </pre>
-            </div>
+            <RequestBody raw={stream.requestBody} />
           )}
 
           {stream.outputPreview && (
             <div>
               <div className="text-[11px] text-gray-500 mb-0.5">Output</div>
-              <pre className="text-[11px] text-gray-400 bg-gray-950 rounded p-2 max-h-24 overflow-y-auto scrollbar-hide whitespace-pre-wrap break-all leading-relaxed">
+              <pre className="text-[11px] text-gray-400 bg-gray-950 rounded p-2 max-h-32 overflow-y-auto scrollbar-hide whitespace-pre-wrap break-words leading-relaxed">
                 {stream.outputPreview}
               </pre>
             </div>
