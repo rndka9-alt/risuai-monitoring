@@ -44,6 +44,7 @@ export interface StreamEntry {
   finishReason: string;
   outputTokens: number;
   reasoningTokens: number;
+  error: string;
 }
 
 export interface StreamsSnapshot {

@@ -129,6 +129,7 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
       finishReason: '',
       outputTokens: 0,
       reasoningTokens: 0,
+      error: '',
     });
     return;
   }
@@ -143,6 +144,7 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
     const finishReason = typeof event.finishReason === 'string' ? event.finishReason : '';
     const outputTokens = Number(event.outputTokens) || 0;
     const reasoningTokens = Number(event.reasoningTokens) || 0;
+    const error = hasError ? String(event.error) : '';
 
     const completed: StreamEntry = active
       ? {
@@ -155,6 +157,7 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
           finishReason,
           outputTokens,
           reasoningTokens,
+          error,
         }
       : {
           id,
@@ -174,6 +177,7 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
           finishReason,
           outputTokens,
           reasoningTokens,
+          error,
         };
 
     // 응답 바이너리에서 이미지 추출 + response body 저장

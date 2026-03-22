@@ -332,6 +332,9 @@ function StreamRow({
             {stream.status === 'failed' && (
               <div>
                 <span className="text-red-400">Failed</span>
+                {stream.error && (
+                  <span className="text-red-300/70 ml-1">{stream.error}</span>
+                )}
               </div>
             )}
             {stream.status === 'cached' && (
