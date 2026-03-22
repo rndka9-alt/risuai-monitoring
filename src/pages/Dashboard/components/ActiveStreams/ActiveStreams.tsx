@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useStreams } from '@/hooks/useStreams';
 import { useStreamImages } from '@/hooks/useStreamImages';
+import { useStreamResponseBody } from '@/hooks/useStreamResponseBody';
 import { JsonTree } from '@/components/JsonTree';
 import type { StreamEntry } from '@/types';
 
@@ -122,6 +123,53 @@ function StreamImages({ streamId }: { streamId: string }) {
         </div>
       )}
     </>
+  );
+}
+
+function ResponseBody({ streamId }: { streamId: string }) {
+  const { data, isLoading } = useStreamResponseBody(streamId);
+  const [showRaw, setShowRaw] = useState(false);
+
+  const parsed = useMemo(() => {
+    if (!data) return null;
+    if (data.contentType.includes('text/event-stream')) return null;
+    try {
+      return JSON.parse(data.body);
+    } catch {
+      return null;
+    }
+  }, [data]);
+
+  if (isLoading) {
+    return <div className="text-[11px] text-gray-600">Loading response body...</div>;
+  }
+
+  if (!data) return null;
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-0.5">
+        <span className="text-[11px] text-gray-500">Response Body</span>
+        <span className="text-[10px] text-gray-600">{data.contentType}</span>
+        {parsed && (
+          <button
+            onClick={() => setShowRaw(!showRaw)}
+            className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
+          >
+            {showRaw ? 'Tree' : 'Raw'}
+          </button>
+        )}
+      </div>
+      <div className="bg-gray-950 rounded p-2 max-h-48 overflow-y-auto scrollbar-hide">
+        {parsed && !showRaw ? (
+          <JsonTree data={parsed} defaultExpandLevel={1} />
+        ) : (
+          <pre className="text-[11px] text-gray-400 whitespace-pre-wrap break-words leading-relaxed">
+            {parsed ? JSON.stringify(parsed, null, 2) : data.body}
+          </pre>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -250,6 +298,8 @@ function StreamRow({
           {stream.requestBody && (
             <RequestBody raw={stream.requestBody} />
           )}
+
+          <ResponseBody streamId={stream.id} />
 
           {stream.outputPreview && (
             <div>

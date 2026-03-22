@@ -14,6 +14,8 @@ const activeStreams = new Map<string, StreamEntry>();
 const recentStreams: StreamEntry[] = [];
 /** streamId → images */
 const streamImages = new Map<string, StreamImage[]>();
+/** streamId → { contentType, base64 } */
+const streamResponseBodies = new Map<string, { contentType: string; base64: string }>();
 
 import { inflateRawSync } from 'node:zlib';
 
@@ -162,9 +164,12 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
           completedAt: Date.now(),
         };
 
-    // 응답 바이너리에서 이미지 추출
+    // 응답 바이너리에서 이미지 추출 + response body 저장
     if (typeof event.responseBody === 'string' && event.responseBody.length > 0) {
       const contentType = String(event.responseContentType ?? '');
+
+      streamResponseBodies.set(id, { contentType, base64: event.responseBody });
+
       const outputImages = extractOutputImages(event.responseBody, contentType);
       if (outputImages.length > 0) {
         const existing = streamImages.get(id) ?? [];
@@ -175,10 +180,11 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
 
     recentStreams.unshift(completed);
     if (recentStreams.length > MAX_RECENT) {
-      // 오래된 항목의 이미지도 정리
+      // 오래된 항목의 이미지·responseBody도 정리
       const removed = recentStreams.splice(MAX_RECENT);
       for (const r of removed) {
         streamImages.delete(r.id);
+        streamResponseBodies.delete(r.id);
       }
     }
   }
@@ -314,4 +320,12 @@ export function getStreams(): StreamsSnapshot {
 /** 특정 스트림의 이미지 반환 */
 export function getStreamImages(streamId: string): StreamImage[] {
   return streamImages.get(streamId) ?? [];
+}
+
+/** 특정 스트림의 response body 반환 */
+export function getStreamResponseBody(streamId: string): { contentType: string; body: string } | null {
+  const entry = streamResponseBodies.get(streamId);
+  if (!entry) return null;
+  const buf = Buffer.from(entry.base64, 'base64');
+  return { contentType: entry.contentType, body: buf.toString('utf-8') };
 }
