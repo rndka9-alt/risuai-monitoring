@@ -8,7 +8,7 @@ import { addLog, getRecentLogs } from './log-store.js';
 import { handleLogStream } from './sse.js';
 import { startHealthPoller, getHealth } from './health-poller.js';
 import { startMetricsAggregator, getMetrics, parseBucketSize } from './metrics-aggregator.js';
-import { handleLlmEvent, getStreams, getStreamImages, getStreamResponseBody } from './llm-store.js';
+import { handleLlmEvent, getStreams, getStreamImages, getStreamResponseBody, streamEvents } from './llm-store.js';
 
 const DIST_CLIENT = path.join(import.meta.dirname, 'client');
 
@@ -101,6 +101,22 @@ function handleApi(
 
   if (url.pathname === '/api/streams') {
     sendJson(res, getStreams());
+    return;
+  }
+
+  if (url.pathname === '/api/streams/events') {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    });
+    const onChange = (): void => { res.write('event: change\ndata: \n\n'); };
+    streamEvents.on('change', onChange);
+    const heartbeat = setInterval(() => { res.write(': heartbeat\n\n'); }, 15_000);
+    req.on('close', () => {
+      streamEvents.off('change', onChange);
+      clearInterval(heartbeat);
+    });
     return;
   }
 

@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { StreamsSnapshot } from '@/types';
 
 const EMPTY: StreamsSnapshot = { active: [], recent: [], total: 0 };
@@ -9,6 +10,16 @@ function isValid(data: unknown): data is StreamsSnapshot {
 }
 
 export function useStreams() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const es = new EventSource('/api/streams/events');
+    es.addEventListener('change', () => {
+      queryClient.invalidateQueries({ queryKey: ['streams'] });
+    });
+    return () => es.close();
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['streams'],
     queryFn: async (): Promise<StreamsSnapshot> => {
@@ -16,10 +27,6 @@ export function useStreams() {
       const data: unknown = await res.json();
       if (!isValid(data)) return EMPTY;
       return data;
-    },
-    refetchInterval: (query) => {
-      const hasActive = query.state.data && query.state.data.active.length > 0;
-      return hasActive ? 1_000 : 5_000;
     },
   });
 }

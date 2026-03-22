@@ -1,4 +1,7 @@
+import { EventEmitter } from 'node:events';
 import type { StreamEntry, StreamsSnapshot } from '../src/types.js';
+
+export const streamEvents = new EventEmitter();
 
 const MAX_RECENT = 10;
 const MAX_IMAGES_PER_REQUEST = 5;
@@ -131,6 +134,7 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
       reasoningTokens: 0,
       error: '',
     });
+    streamEvents.emit('change');
     return;
   }
 
@@ -203,6 +207,7 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
         streamResponseBodies.delete(r.id);
       }
     }
+    streamEvents.emit('change');
   }
 }
 
