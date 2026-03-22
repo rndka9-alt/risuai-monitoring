@@ -41,6 +41,8 @@ export interface StreamEntry {
   imageCount: number;
   outputPreview: string;
   completedAt: number | null;
+  finishReason: string;
+  outputTokens: number;
 }
 
 export interface StreamsSnapshot {

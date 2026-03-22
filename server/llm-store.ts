@@ -126,6 +126,8 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
       imageCount,
       outputPreview: '',
       completedAt: null,
+      finishReason: '',
+      outputTokens: 0,
     });
     return;
   }
@@ -137,6 +139,8 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
     const hasError = typeof event.error === 'string' && event.error.length > 0;
     const isCached = event.responseType === 'cache';
     const status = hasError ? 'failed' : isCached ? 'cached' : 'completed';
+    const finishReason = typeof event.finishReason === 'string' ? event.finishReason : '';
+    const outputTokens = Number(event.outputTokens) || 0;
 
     const completed: StreamEntry = active
       ? {
@@ -146,6 +150,8 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
           textLength: Number(event.textLength) || 0,
           outputPreview: String(event.outputPreview ?? ''),
           completedAt: Date.now(),
+          finishReason,
+          outputTokens,
         }
       : {
           id,
@@ -162,6 +168,8 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
           imageCount: 0,
           outputPreview: String(event.outputPreview ?? ''),
           completedAt: Date.now(),
+          finishReason,
+          outputTokens,
         };
 
     // 응답 바이너리에서 이미지 추출 + response body 저장

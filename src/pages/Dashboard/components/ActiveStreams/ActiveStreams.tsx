@@ -38,6 +38,23 @@ function formatTimeAgo(completedAt: number): string {
   return `${Math.floor(ago / 3600)}h ago`;
 }
 
+function CollapsibleSection({ label, children, extra }: { label: string; children: React.ReactNode; extra?: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 mb-0.5 text-[11px] text-gray-500 hover:text-gray-300 transition-colors"
+      >
+        <span>{open ? '▼' : '▶'}</span>
+        <span>{label}</span>
+        {extra}
+      </button>
+      {open && children}
+    </div>
+  );
+}
+
 function RequestBody({ raw }: { raw: string }) {
   const [showRaw, setShowRaw] = useState(false);
   const parsed = useMemo(() => {
@@ -49,18 +66,17 @@ function RequestBody({ raw }: { raw: string }) {
   }, [raw]);
 
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-0.5">
-        <span className="text-[11px] text-gray-500">Request Body</span>
-        {parsed && (
-          <button
-            onClick={() => setShowRaw(!showRaw)}
-            className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
-          >
-            {showRaw ? 'Tree' : 'Raw'}
-          </button>
-        )}
-      </div>
+    <CollapsibleSection
+      label="Request Body"
+      extra={parsed ? (
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowRaw(!showRaw); }}
+          className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
+        >
+          {showRaw ? 'Tree' : 'Raw'}
+        </button>
+      ) : undefined}
+    >
       <div className="bg-gray-950 rounded p-2 max-h-48 overflow-y-auto scrollbar-hide">
         {parsed && !showRaw ? (
           <JsonTree data={parsed} defaultExpandLevel={1} />
@@ -70,7 +86,7 @@ function RequestBody({ raw }: { raw: string }) {
           </pre>
         )}
       </div>
-    </div>
+    </CollapsibleSection>
   );
 }
 
@@ -147,19 +163,22 @@ function ResponseBody({ streamId }: { streamId: string }) {
   if (!data) return null;
 
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-0.5">
-        <span className="text-[11px] text-gray-500">Response Body</span>
-        <span className="text-[10px] text-gray-600">{data.contentType}</span>
-        {parsed && (
-          <button
-            onClick={() => setShowRaw(!showRaw)}
-            className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
-          >
-            {showRaw ? 'Tree' : 'Raw'}
-          </button>
-        )}
-      </div>
+    <CollapsibleSection
+      label="Response Body"
+      extra={
+        <>
+          <span className="text-[10px] text-gray-600">{data.contentType}</span>
+          {parsed && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowRaw(!showRaw); }}
+              className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
+            >
+              {showRaw ? 'Tree' : 'Raw'}
+            </button>
+          )}
+        </>
+      }
+    >
       <div className="bg-gray-950 rounded p-2 max-h-48 overflow-y-auto scrollbar-hide">
         {parsed && !showRaw ? (
           <JsonTree data={parsed} defaultExpandLevel={1} />
@@ -169,7 +188,7 @@ function ResponseBody({ streamId }: { streamId: string }) {
           </pre>
         )}
       </div>
-    </div>
+    </CollapsibleSection>
   );
 }
 
@@ -220,7 +239,9 @@ function StreamRow({
           </span>
         )}
         <span className="text-gray-500 tabular-nums ml-auto shrink-0">
-          {formatTextLength(stream.textLength)} chars
+          {stream.outputTokens > 0
+            ? `${stream.outputTokens.toLocaleString()} tok`
+            : `${formatTextLength(stream.outputPreview.length)} chars`}
           {!isActive && (
             <span className="ml-1.5">
               ({formatElapsed(stream.elapsedMs)})
@@ -281,6 +302,24 @@ function StreamRow({
                 {stream.targetCharId ?? 'N/A'}
               </span>
             </div>
+            {stream.outputTokens > 0 && (
+              <div>
+                <span className="text-gray-500">Tokens </span>
+                <span className="text-gray-300">{stream.outputTokens.toLocaleString()}</span>
+              </div>
+            )}
+            {stream.finishReason && (
+              <div>
+                <span className="text-gray-500">Finish </span>
+                <span className={
+                  stream.finishReason === 'stop' || stream.finishReason === 'end_turn' || stream.finishReason === 'STOP'
+                    ? 'text-gray-300'
+                    : 'text-amber-300'
+                }>
+                  {stream.finishReason}
+                </span>
+              </div>
+            )}
             {stream.status === 'failed' && (
               <div>
                 <span className="text-red-400">Failed</span>
@@ -302,12 +341,13 @@ function StreamRow({
           <ResponseBody streamId={stream.id} />
 
           {stream.outputPreview && (
-            <div>
-              <div className="text-[11px] text-gray-500 mb-0.5">Output</div>
-              <pre className="text-[11px] text-gray-400 bg-gray-950 rounded p-2 max-h-32 overflow-y-auto scrollbar-hide whitespace-pre-wrap break-words leading-relaxed">
+            <CollapsibleSection
+              label={`Output (${formatTextLength(stream.outputPreview.length)} chars)`}
+            >
+              <pre className="text-[11px] text-gray-400 bg-gray-950 rounded p-2 max-h-48 overflow-y-auto scrollbar-hide whitespace-pre-wrap break-words leading-relaxed">
                 {stream.outputPreview}
               </pre>
-            </div>
+            </CollapsibleSection>
           )}
         </div>
       )}
