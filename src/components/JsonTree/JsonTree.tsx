@@ -53,9 +53,9 @@ function TreeNode({ value, keyName, depth, defaultExpandLevel }: NodeProps) {
     );
   }
 
-  const entries = Array.isArray(value)
-    ? value.map((v, i) => [String(i), v] as const)
-    : Object.entries(value as Record<string, unknown>);
+  const entries: [string, unknown][] = Array.isArray(value)
+    ? value.map((v, i) => [String(i), v])
+    : Object.entries(value);
 
   const bracket = Array.isArray(value) ? ['[', ']'] : ['{', '}'];
   const isEmpty = entries.length === 0;

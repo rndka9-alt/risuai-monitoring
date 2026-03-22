@@ -94,8 +94,8 @@ async function checkHealth(
     if (target.proxy === 'sync') {
       try {
         const parsed: unknown = JSON.parse(body);
-        if (typeof parsed === 'object' && parsed !== null) {
-          details = parsed as Record<string, unknown>;
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+          details = parsed;
         }
       } catch {
         // not JSON, ignore

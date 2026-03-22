@@ -5,8 +5,7 @@ const EMPTY_SNAPSHOT: MetricsSnapshot = { windowMinutes: 60, series: [] };
 
 function isValidSnapshot(data: unknown): data is MetricsSnapshot {
   if (typeof data !== 'object' || data === null) return false;
-  const obj = data as Record<string, unknown>;
-  return 'series' in obj && Array.isArray(obj.series);
+  return 'series' in data && Array.isArray(data.series);
 }
 
 export function useMetrics(bucket: string = '60s') {

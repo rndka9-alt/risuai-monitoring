@@ -4,9 +4,12 @@ import type { StreamsSnapshot } from '@/types';
 
 const EMPTY: StreamsSnapshot = { active: [], recent: [], total: 0 };
 
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null;
+}
+
 function isValid(data: unknown): data is StreamsSnapshot {
-  if (typeof data !== 'object' || data === null) return false;
-  return 'active' in data && Array.isArray((data as Record<string, unknown>).active);
+  return isRecord(data) && 'active' in data && Array.isArray(data.active);
 }
 
 export function useStreams() {

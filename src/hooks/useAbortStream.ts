@@ -8,7 +8,7 @@ export function useAbortStream() {
       const res = await fetch(`/api/streams/${encodeURIComponent(streamId)}/abort`, {
         method: 'POST',
       });
-      return res.json() as Promise<{ success?: boolean; error?: string }>;
+      return res.json();
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['streams'] });

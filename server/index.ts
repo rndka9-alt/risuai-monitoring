@@ -59,8 +59,8 @@ function handleApi(
     readRequestBody(req).then((body) => {
       try {
         const event: unknown = JSON.parse(body);
-        if (typeof event === 'object' && event !== null) {
-          handleLlmEvent(event as Record<string, unknown>);
+        if (typeof event === 'object' && event !== null && !Array.isArray(event)) {
+          handleLlmEvent(event);
         }
       } catch {
         // ignore malformed
