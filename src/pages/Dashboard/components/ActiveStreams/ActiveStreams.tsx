@@ -110,13 +110,13 @@ function StreamImages({ streamId }: { streamId: string }) {
           <div className="text-[11px] text-gray-500 mb-1">
             Input Images ({inputImages.length})
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {inputImages.map((img, i) => (
               <img
                 key={`in-${i}`}
                 src={`data:${img.mediaType};base64,${img.data}`}
                 alt={`Input image ${i + 1}`}
-                className="max-h-32 max-w-48 rounded border border-gray-700 object-contain bg-gray-950"
+                className="max-h-32 max-w-48 rounded border border-gray-700 object-contain bg-gray-950 shrink-0"
               />
             ))}
           </div>
