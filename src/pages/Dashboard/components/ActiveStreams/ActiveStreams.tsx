@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useStreams } from '@/hooks/useStreams';
 import { useStreamImages } from '@/hooks/useStreamImages';
 import { useStreamResponseBody } from '@/hooks/useStreamResponseBody';
+import { useAbortStream } from '@/hooks/useAbortStream';
 import { JsonTree } from '@/components/JsonTree';
 import type { StreamEntry } from '@/types';
 
@@ -197,63 +198,74 @@ function StreamRow({
   isActive,
   expanded,
   onToggle,
+  onAbort,
 }: {
   stream: StreamEntry;
   isActive: boolean;
   expanded: boolean;
   onToggle: () => void;
+  onAbort?: () => void;
 }) {
 
   return (
     <div className="border-b border-gray-800/50 last:border-b-0">
-      <button
-        onClick={onToggle}
+      <div
         className={`flex items-center gap-3 px-3 py-1.5 text-xs w-full text-left hover:bg-white/[0.02] transition-colors ${
           isActive ? '' : 'opacity-50'
         }`}
       >
-        <div
-          className={`w-2 h-2 rounded-full shrink-0 ${
-            isActive
-              ? 'bg-green-500 animate-pulse'
-              : stream.status === 'failed'
-                ? 'bg-red-500'
-                : stream.status === 'cached'
-                  ? 'bg-blue-400'
-                  : 'bg-gray-500'
-          }`}
-        />
-        <span className="text-gray-400 tabular-nums shrink-0">
-          {isActive
-            ? formatElapsed(stream.elapsedMs)
-            : stream.completedAt
-              ? formatTimeAgo(stream.completedAt)
-              : formatElapsed(stream.elapsedMs)}
-        </span>
-        <span className="text-gray-300 truncate min-w-0">
-          {stream.targetCharId ?? 'unknown'}
-        </span>
-        {stream.model && (
-          <span className="text-gray-500 text-[11px] shrink-0">
-            {stream.model}
+        <button onClick={onToggle} className="flex items-center gap-3 min-w-0 flex-1">
+          <div
+            className={`w-2 h-2 rounded-full shrink-0 ${
+              isActive
+                ? 'bg-green-500 animate-pulse'
+                : stream.status === 'failed'
+                  ? 'bg-red-500'
+                  : stream.status === 'cached'
+                    ? 'bg-blue-400'
+                    : 'bg-gray-500'
+            }`}
+          />
+          <span className="text-gray-400 tabular-nums shrink-0">
+            {isActive
+              ? formatElapsed(stream.elapsedMs)
+              : stream.completedAt
+                ? formatTimeAgo(stream.completedAt)
+                : formatElapsed(stream.elapsedMs)}
           </span>
-        )}
-        <span className="text-gray-500 tabular-nums ml-auto shrink-0">
-          {stream.outputTokens > 0
-            ? stream.reasoningTokens > 0
-              ? `${stream.outputTokens.toLocaleString()} tok (${stream.reasoningTokens.toLocaleString()} reasoning)`
-              : `${stream.outputTokens.toLocaleString()} tok`
-            : `${formatTextLength(stream.outputPreview.length)} chars`}
-          {!isActive && (
-            <span className="ml-1.5">
-              ({formatElapsed(stream.elapsedMs)})
+          <span className="text-gray-300 truncate min-w-0">
+            {stream.targetCharId ?? 'unknown'}
+          </span>
+          {stream.model && (
+            <span className="text-gray-500 text-[11px] shrink-0">
+              {stream.model}
             </span>
           )}
-        </span>
-        <span className="text-gray-600 shrink-0">
-          {expanded ? '▲' : '▼'}
-        </span>
-      </button>
+          <span className="text-gray-500 tabular-nums ml-auto shrink-0">
+            {stream.outputTokens > 0
+              ? stream.reasoningTokens > 0
+                ? `${stream.outputTokens.toLocaleString()} tok (${stream.reasoningTokens.toLocaleString()} reasoning)`
+                : `${stream.outputTokens.toLocaleString()} tok`
+              : `${formatTextLength(stream.outputPreview.length)} chars`}
+            {!isActive && (
+              <span className="ml-1.5">
+                ({formatElapsed(stream.elapsedMs)})
+              </span>
+            )}
+          </span>
+          <span className="text-gray-600 shrink-0">
+            {expanded ? '▲' : '▼'}
+          </span>
+        </button>
+        {isActive && onAbort && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onAbort(); }}
+            className="shrink-0 px-2 py-0.5 text-[11px] rounded bg-red-900/40 text-red-400 hover:bg-red-900/70 hover:text-red-300 transition-colors"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
 
       {expanded && (
         <div className="px-3 pb-2 space-y-1.5">
@@ -370,6 +382,7 @@ function StreamRow({
 export function ActiveStreams() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { data } = useStreams();
+  const abortStream = useAbortStream();
 
   const active = data?.active ?? [];
   const recent = data?.recent ?? [];
@@ -403,6 +416,7 @@ export function ActiveStreams() {
             isActive
             expanded={expandedId === stream.id}
             onToggle={() => setExpandedId(expandedId === stream.id ? null : stream.id)}
+            onAbort={() => abortStream.mutate(stream.id)}
           />
         ))}
         {recent.map((stream) => (

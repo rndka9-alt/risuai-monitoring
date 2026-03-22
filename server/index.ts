@@ -117,6 +117,29 @@ function handleApi(
     return;
   }
 
+  const abortMatch = url.pathname.match(/^\/api\/streams\/([^/]+)\/abort$/);
+  if (abortMatch && req.method === 'POST') {
+    const streamId = abortMatch[1];
+    if (!config.syncUrl) {
+      res.writeHead(501, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'SYNC_URL not configured' }));
+      return;
+    }
+    const syncTarget = `${config.syncUrl}/_internal/stream/${encodeURIComponent(streamId)}/abort`;
+    fetch(syncTarget, { method: 'POST' })
+      .then(async (syncRes) => {
+        const body = await syncRes.text();
+        res.writeHead(syncRes.status, { 'Content-Type': 'application/json' });
+        res.end(body);
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : 'unknown error';
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: message }));
+      });
+    return;
+  }
+
   if (url.pathname === '/api/metrics') {
     const bucketMs = parseBucketSize(url.searchParams.get('bucket'));
     sendJson(res, getMetrics(bucketMs));

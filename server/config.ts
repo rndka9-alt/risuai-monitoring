@@ -19,4 +19,5 @@ export const config = {
   metricsBucketSizeMs: 5_000,
   metricsRetentionMinutes: Number(process.env.METRICS_RETENTION_MINUTES) || 180,
   metricsMaxTimingsPerBucket: 200,
+  syncUrl: process.env.SYNC_URL ?? '',
 };
