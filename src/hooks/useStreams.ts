@@ -28,5 +28,9 @@ export function useStreams() {
       if (!isValid(data)) return EMPTY;
       return data;
     },
+    refetchInterval: (query) => {
+      const hasActive = query.state.data && query.state.data.active.length > 0;
+      return hasActive ? 1_000 : false;
+    },
   });
 }
