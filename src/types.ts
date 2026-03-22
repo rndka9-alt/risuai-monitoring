@@ -43,6 +43,7 @@ export interface StreamEntry {
   completedAt: number | null;
   finishReason: string;
   outputTokens: number;
+  reasoningTokens: number;
 }
 
 export interface StreamsSnapshot {

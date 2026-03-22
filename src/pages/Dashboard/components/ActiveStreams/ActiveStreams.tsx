@@ -240,7 +240,9 @@ function StreamRow({
         )}
         <span className="text-gray-500 tabular-nums ml-auto shrink-0">
           {stream.outputTokens > 0
-            ? `${stream.outputTokens.toLocaleString()} tok`
+            ? stream.reasoningTokens > 0
+              ? `${stream.outputTokens.toLocaleString()} tok (${stream.reasoningTokens.toLocaleString()} reasoning)`
+              : `${stream.outputTokens.toLocaleString()} tok`
             : `${formatTextLength(stream.outputPreview.length)} chars`}
           {!isActive && (
             <span className="ml-1.5">
@@ -305,7 +307,14 @@ function StreamRow({
             {stream.outputTokens > 0 && (
               <div>
                 <span className="text-gray-500">Tokens </span>
-                <span className="text-gray-300">{stream.outputTokens.toLocaleString()}</span>
+                <span className="text-gray-300">
+                  {stream.outputTokens.toLocaleString()}
+                  {stream.reasoningTokens > 0 && (
+                    <span className="text-purple-300 ml-1">
+                      ({stream.reasoningTokens.toLocaleString()} reasoning)
+                    </span>
+                  )}
+                </span>
               </div>
             )}
             {stream.finishReason && (

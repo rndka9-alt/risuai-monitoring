@@ -128,6 +128,7 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
       completedAt: null,
       finishReason: '',
       outputTokens: 0,
+      reasoningTokens: 0,
     });
     return;
   }
@@ -141,6 +142,7 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
     const status = hasError ? 'failed' : isCached ? 'cached' : 'completed';
     const finishReason = typeof event.finishReason === 'string' ? event.finishReason : '';
     const outputTokens = Number(event.outputTokens) || 0;
+    const reasoningTokens = Number(event.reasoningTokens) || 0;
 
     const completed: StreamEntry = active
       ? {
@@ -152,6 +154,7 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
           completedAt: Date.now(),
           finishReason,
           outputTokens,
+          reasoningTokens,
         }
       : {
           id,
@@ -170,6 +173,7 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
           completedAt: Date.now(),
           finishReason,
           outputTokens,
+          reasoningTokens,
         };
 
     // 응답 바이너리에서 이미지 추출 + response body 저장
