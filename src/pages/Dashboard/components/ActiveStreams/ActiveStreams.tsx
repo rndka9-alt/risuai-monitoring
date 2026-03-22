@@ -151,7 +151,9 @@ function StreamRow({
               ? 'bg-green-500 animate-pulse'
               : stream.status === 'failed'
                 ? 'bg-red-500'
-                : 'bg-gray-500'
+                : stream.status === 'cached'
+                  ? 'bg-blue-400'
+                  : 'bg-gray-500'
           }`}
         />
         <span className="text-gray-400 tabular-nums shrink-0">
@@ -234,6 +236,11 @@ function StreamRow({
             {stream.status === 'failed' && (
               <div>
                 <span className="text-red-400">Failed</span>
+              </div>
+            )}
+            {stream.status === 'cached' && (
+              <div>
+                <span className="text-blue-400">Cached</span>
               </div>
             )}
           </div>

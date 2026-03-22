@@ -133,7 +133,8 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
     activeStreams.delete(id);
 
     const hasError = typeof event.error === 'string' && event.error.length > 0;
-    const status = hasError ? 'failed' : 'completed';
+    const isCached = event.responseType === 'cache';
+    const status = hasError ? 'failed' : isCached ? 'cached' : 'completed';
 
     const completed: StreamEntry = active
       ? {
