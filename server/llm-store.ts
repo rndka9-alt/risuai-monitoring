@@ -1,5 +1,8 @@
 import { EventEmitter } from 'node:events';
+import http from 'node:http';
 import type { StreamEntry, StreamsSnapshot } from '../src/types.js';
+import { config } from './config.js';
+import { logger } from './logger.js';
 
 export const streamEvents = new EventEmitter();
 
@@ -350,3 +353,116 @@ export function getStreamResponseBody(streamId: string): { contentType: string; 
   const buf = Buffer.from(entry.base64, 'base64');
   return { contentType: entry.contentType, body: buf.toString('utf-8') };
 }
+
+// --- Heartbeat: sync에 active stream 생사 확인 ---
+
+export function expireStream(id: string, reason: string): void {
+  const active = activeStreams.get(id);
+  if (!active) return;
+  activeStreams.delete(id);
+
+  const now = Date.now();
+  const completed: StreamEntry = {
+    ...active,
+    status: 'failed',
+    elapsedMs: now - active.createdAt,
+    completedAt: now,
+    error: reason,
+  };
+
+  recentStreams.unshift(completed);
+  if (recentStreams.length > MAX_RECENT) {
+    const removed = recentStreams.splice(MAX_RECENT);
+    for (const r of removed) {
+      streamImages.delete(r.id);
+      streamResponseBodies.delete(r.id);
+    }
+  }
+  streamEvents.emit('change');
+  logger.info('Stream expired', { streamId: id, reason });
+}
+
+interface SyncStreamsResponse {
+  active: ReadonlyArray<{ id: string }>;
+}
+
+function isSyncStreamsResponse(v: unknown): v is SyncStreamsResponse {
+  if (!isRecord(v)) return false;
+  if (!Array.isArray(v.active)) return false;
+  return v.active.every((item: unknown) => isRecord(item) && typeof item.id === 'string');
+}
+
+export function fetchSyncActiveIds(): Promise<Set<string> | null> {
+  if (!config.syncUrl) return Promise.resolve(null);
+
+  let url: URL;
+  try {
+    url = new URL('/_internal/streams', config.syncUrl);
+  } catch {
+    return Promise.resolve(null);
+  }
+
+  return new Promise((resolve) => {
+    const req = http.get(
+      { hostname: url.hostname, port: url.port, path: url.pathname, timeout: 5_000 },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk: Buffer) => chunks.push(chunk));
+        res.on('end', () => {
+          try {
+            const parsed: unknown = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+            if (!isSyncStreamsResponse(parsed)) {
+              resolve(null);
+              return;
+            }
+            resolve(new Set(parsed.active.map((s) => s.id)));
+          } catch {
+            resolve(null);
+          }
+        });
+      },
+    );
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+  });
+}
+
+export type FetchActiveIds = () => Promise<Set<string> | null>;
+
+export async function heartbeat(fetchActiveIds: FetchActiveIds = fetchSyncActiveIds): Promise<void> {
+  if (activeStreams.size === 0) return;
+
+  const now = Date.now();
+
+  // 안전망: sync 응답 불가 시에도 최대 수명 초과 스트림은 만료
+  for (const [id, stream] of activeStreams) {
+    if (now - stream.createdAt > config.streamMaxAgeMs) {
+      expireStream(id, 'max age exceeded');
+    }
+  }
+
+  if (activeStreams.size === 0) return;
+
+  const syncActiveIds = await fetchActiveIds();
+  if (!syncActiveIds) {
+    logger.debug('Heartbeat: sync unreachable, skipping');
+    return;
+  }
+
+  for (const id of activeStreams.keys()) {
+    if (!syncActiveIds.has(id)) {
+      expireStream(id, 'not found in sync');
+    }
+  }
+}
+
+/** 테스트용: 내부 상태 초기화 */
+export function _resetForTest(): void {
+  activeStreams.clear();
+  recentStreams.length = 0;
+  streamImages.clear();
+  streamResponseBodies.clear();
+}
+
+const heartbeatTimer = setInterval(() => { heartbeat(); }, config.streamHeartbeatIntervalMs);
+heartbeatTimer.unref();
