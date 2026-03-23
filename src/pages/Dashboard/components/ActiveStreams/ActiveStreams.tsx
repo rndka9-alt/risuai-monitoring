@@ -3,6 +3,7 @@ import { useStreams } from '@/hooks/useStreams';
 import { useStreamImages } from '@/hooks/useStreamImages';
 import { useStreamResponseBody } from '@/hooks/useStreamResponseBody';
 import { useAbortStream } from '@/hooks/useAbortStream';
+import { useTick } from '@/hooks/useTick';
 import { JsonTree } from '@/components/JsonTree';
 import type { StreamEntry } from '@/types';
 
@@ -32,8 +33,8 @@ function extractProvider(url: string): string {
   }
 }
 
-function formatTimeAgo(completedAt: number): string {
-  const ago = Math.floor((Date.now() - completedAt) / 1000);
+function formatTimeAgo(completedAt: number, now: number): string {
+  const ago = Math.floor((now - completedAt) / 1000);
   if (ago < 60) return `${ago}s ago`;
   if (ago < 3600) return `${Math.floor(ago / 60)}m ago`;
   return `${Math.floor(ago / 3600)}h ago`;
@@ -199,12 +200,14 @@ function StreamRow({
   expanded,
   onToggle,
   onAbort,
+  now,
 }: {
   stream: StreamEntry;
   isActive: boolean;
   expanded: boolean;
   onToggle: () => void;
   onAbort?: () => void;
+  now: number;
 }) {
 
   return (
@@ -230,7 +233,7 @@ function StreamRow({
             {isActive
               ? formatElapsed(stream.elapsedMs)
               : stream.completedAt
-                ? formatTimeAgo(stream.completedAt)
+                ? formatTimeAgo(stream.completedAt, now)
                 : formatElapsed(stream.elapsedMs)}
           </span>
           <span className="text-gray-300 truncate min-w-0">
@@ -383,6 +386,7 @@ export function ActiveStreams() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { data } = useStreams();
   const abortStream = useAbortStream();
+  const now = useTick();
 
   const active = data?.active ?? [];
   const recent = data?.recent ?? [];
@@ -417,6 +421,7 @@ export function ActiveStreams() {
             expanded={expandedId === stream.id}
             onToggle={() => setExpandedId(expandedId === stream.id ? null : stream.id)}
             onAbort={() => abortStream.mutate(stream.id)}
+            now={now}
           />
         ))}
         {recent.map((stream) => (
@@ -426,6 +431,7 @@ export function ActiveStreams() {
             isActive={false}
             expanded={expandedId === stream.id}
             onToggle={() => setExpandedId(expandedId === stream.id ? null : stream.id)}
+            now={now}
           />
         ))}
       </div>
