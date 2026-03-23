@@ -432,17 +432,6 @@ export type FetchActiveIds = () => Promise<Set<string> | null>;
 export async function heartbeat(fetchActiveIds: FetchActiveIds = fetchSyncActiveIds): Promise<void> {
   if (activeStreams.size === 0) return;
 
-  const now = Date.now();
-
-  // 안전망: sync 응답 불가 시에도 최대 수명 초과 스트림은 만료
-  for (const [id, stream] of activeStreams) {
-    if (now - stream.createdAt > config.streamMaxAgeMs) {
-      expireStream(id, 'max age exceeded');
-    }
-  }
-
-  if (activeStreams.size === 0) return;
-
   const syncActiveIds = await fetchActiveIds();
   if (!syncActiveIds) {
     logger.debug('Heartbeat: sync unreachable, skipping');

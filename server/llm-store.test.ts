@@ -83,21 +83,6 @@ describe('llm-store heartbeat', () => {
     expect(active[0].id).toBe('stream-a');
   });
 
-  it('streamMaxAgeMs 초과 시 sync 응답과 무관하게 만료시킨다', async () => {
-    // 2시간 전에 생성된 스트림
-    const twoHoursAgo = Date.now() - 2 * 60 * 60_000;
-    handleLlmEvent(makeStartEvent('zombie', { timestamp: twoHoursAgo }));
-
-    // sync가 "네 살아잇어요~"라고 해도 max age 초과면 만료
-    const fetch: FetchActiveIds = () => Promise.resolve(new Set(['zombie']));
-    await heartbeat(fetch);
-
-    const { active, recent } = getStreams();
-    expect(active).toHaveLength(0);
-    expect(recent).toHaveLength(1);
-    expect(recent[0].error).toBe('max age exceeded');
-  });
-
   it('이미 end 이벤트로 완료된 stream은 heartbeat 대상이 아니다', async () => {
     handleLlmEvent(makeStartEvent('stream-a'));
     handleLlmEvent(makeEndEvent('stream-a'));

@@ -22,6 +22,4 @@ export const config = {
   syncUrl: process.env.SYNC_URL ?? '',
   /** active stream heartbeat 주기 (ms) */
   streamHeartbeatIntervalMs: 10_000,
-  /** sync 응답 불가 시 최대 허용 시간 (ms). 이 시간을 넘기면 타임아웃 만료 */
-  streamMaxAgeMs: Number(process.env.STREAM_MAX_AGE_MS) || 90 * 60_000,
 };
