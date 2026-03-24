@@ -134,4 +134,35 @@ describe('expireStream', () => {
     expect(recent[0].elapsedMs).toBeGreaterThan(4.9 * 60_000);
     expect(recent[0].elapsedMs).toBeLessThan(5.1 * 60_000);
   });
+
+  it('expire 후 end 이벤트가 오면 중복 없이 기존 항목을 업데이트한다', () => {
+    handleLlmEvent(makeStartEvent('stream-a', {
+      targetCharId: 'char-1',
+      requestBody: JSON.stringify({ model: 'gpt-4', messages: [] }),
+    }));
+    expireStream('stream-a', 'not found in sync');
+
+    // expire 후 실제 end 이벤트 도착
+    handleLlmEvent(makeEndEvent('stream-a', {
+      duration: 5000,
+      textLength: 100,
+      outputPreview: 'result text',
+      finishReason: 'stop',
+      outputTokens: 50,
+    }));
+
+    const { active, recent } = getStreams();
+    expect(active).toHaveLength(0);
+    // 중복 없이 1개만 존재
+    expect(recent).toHaveLength(1);
+    expect(recent[0].id).toBe('stream-a');
+    // end 이벤트의 status로 업데이트됨
+    expect(recent[0].status).toBe('completed');
+    // start 이벤트의 원본 데이터 유지
+    expect(recent[0].model).toBe('gpt-4');
+    expect(recent[0].targetCharId).toBe('char-1');
+    // end 이벤트의 데이터 반영
+    expect(recent[0].finishReason).toBe('stop');
+    expect(recent[0].outputTokens).toBe(50);
+  });
 });

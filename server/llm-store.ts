@@ -153,9 +153,13 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
     const reasoningTokens = Number(event.reasoningTokens) || 0;
     const error = hasError ? String(event.error) : '';
 
-    const completed: StreamEntry = active
+    // heartbeat에 의해 이미 expire된 항목이 recentStreams에 있을 수 있음
+    const expiredIdx = active ? -1 : recentStreams.findIndex((s) => s.id === id);
+    const base = active ?? (expiredIdx >= 0 ? recentStreams[expiredIdx] : null);
+
+    const completed: StreamEntry = base
       ? {
-          ...active,
+          ...base,
           status,
           elapsedMs: Number(event.duration) || 0,
           textLength: Number(event.textLength) || 0,
@@ -201,13 +205,17 @@ export function handleLlmEvent(event: Record<string, unknown>): void {
       }
     }
 
-    recentStreams.unshift(completed);
-    if (recentStreams.length > MAX_RECENT) {
-      // 오래된 항목의 이미지·responseBody도 정리
-      const removed = recentStreams.splice(MAX_RECENT);
-      for (const r of removed) {
-        streamImages.delete(r.id);
-        streamResponseBodies.delete(r.id);
+    // heartbeat로 expire된 항목이면 제자리 업데이트, 아니면 앞에 추가
+    if (expiredIdx >= 0) {
+      recentStreams[expiredIdx] = completed;
+    } else {
+      recentStreams.unshift(completed);
+      if (recentStreams.length > MAX_RECENT) {
+        const removed = recentStreams.splice(MAX_RECENT);
+        for (const r of removed) {
+          streamImages.delete(r.id);
+          streamResponseBodies.delete(r.id);
+        }
       }
     }
     streamEvents.emit('change');
