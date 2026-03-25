@@ -17,9 +17,10 @@ const PROXY_STROKE: Record<ProxyName, string> = {
   'remote-inlay': '#ec4899',
   caddy: '#06b6d4',
   risuai: '#f97316',
+  'setting-searchbar': '#f59e0b',
 };
 
-const PROXIES: readonly ProxyName[] = ['sync', 'with-sqlite', 'remote-inlay', 'caddy', 'risuai'];
+const PROXIES: readonly ProxyName[] = ['sync', 'with-sqlite', 'remote-inlay', 'caddy', 'risuai', 'setting-searchbar'];
 
 const BUCKET_OPTIONS = ['5s', '10s', '30s', '60s', '1h'] as const;
 
