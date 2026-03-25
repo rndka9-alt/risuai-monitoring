@@ -5,6 +5,7 @@ import { LogViewer } from './components/LogViewer';
 import { HealthBar } from './components/HealthBar';
 import { MetricsPanel } from './components/MetricsPanel';
 import { ActiveStreams } from './components/ActiveStreams';
+import { SearchbarIndex } from './components/SearchbarIndex';
 import type { ProxyName } from '@/types';
 
 function DashboardTab() {
@@ -39,9 +40,18 @@ function PlaceholderTab({ proxy }: { proxy: ProxyName }) {
   );
 }
 
+function SearchbarTab() {
+  return (
+    <main className="flex-1 overflow-hidden">
+      <SearchbarIndex />
+    </main>
+  );
+}
+
 function TabContent({ activeProxy }: { activeProxy: ProxyName | null }) {
   if (activeProxy === null) return <DashboardTab />;
   if (activeProxy === 'sync') return <SyncTab />;
+  if (activeProxy === 'setting-searchbar') return <SearchbarTab />;
   return <PlaceholderTab proxy={activeProxy} />;
 }
 

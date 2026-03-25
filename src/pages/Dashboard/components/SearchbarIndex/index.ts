@@ -1,0 +1,1 @@
+export { SearchbarIndex } from './SearchbarIndex';

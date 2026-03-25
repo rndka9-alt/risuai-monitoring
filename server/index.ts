@@ -156,6 +156,21 @@ function handleApi(
     return;
   }
 
+  if (url.pathname === '/api/searchbar/index') {
+    fetch('http://setting-searchbar:3004/setting-searchbar/index')
+      .then(async (upstream) => {
+        const body = await upstream.text();
+        res.writeHead(upstream.status, { 'Content-Type': 'application/json' });
+        res.end(body);
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : 'unknown error';
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: message }));
+      });
+    return;
+  }
+
   if (url.pathname === '/api/metrics') {
     const bucketMs = parseBucketSize(url.searchParams.get('bucket'));
     sendJson(res, getMetrics(bucketMs));
