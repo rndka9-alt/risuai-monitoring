@@ -73,6 +73,10 @@ server/
   logger.ts        # [Monitor] 로거
 ```
 
+## 문서
+
+- API 엔드포인트, 환경변수, 프로젝트 구조 등 외부 인터페이스가 변경되면 README.md도 함께 업데이트한다.
+
 ## 테스트
 
 - 테스트 파일은 소스 옆에 co-locate한다 (`parser.ts` → `parser.test.ts`).
