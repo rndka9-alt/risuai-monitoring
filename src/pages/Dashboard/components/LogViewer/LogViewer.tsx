@@ -7,7 +7,7 @@ interface LogViewerProps {
 }
 
 const LEVELS: readonly LogLevel[] = ['debug', 'info', 'warn', 'error'];
-const PROXIES: readonly ProxyName[] = ['sync', 'with-sqlite', 'remote-inlay', 'caddy', 'risuai'];
+const PROXIES: readonly ProxyName[] = ['sync', 'with-sqlite', 'remote-inlay', 'caddy', 'risuai', 'setting-searchbar'];
 
 const LEVEL_COLORS: Record<LogLevel, string> = {
   debug: 'text-gray-400',
@@ -22,6 +22,7 @@ const PROXY_COLORS: Record<ProxyName, string> = {
   'remote-inlay': 'bg-pink-500/20 text-pink-300',
   caddy: 'bg-cyan-500/20 text-cyan-300',
   risuai: 'bg-orange-500/20 text-orange-300',
+  'setting-searchbar': 'bg-amber-500/20 text-amber-300',
 };
 
 function formatTime(timestamp: number): string {

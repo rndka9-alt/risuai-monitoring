@@ -16,6 +16,7 @@ const TARGETS: readonly HealthTarget[] = [
   { proxy: 'remote-inlay', containerName: 'remote-inlay', healthUrl: 'http://remote-inlay:3003/remote-inlay/health' },
   { proxy: 'caddy', containerName: 'caddy', healthUrl: 'http://caddy:80/' },
   { proxy: 'risuai', containerName: 'risuai', healthUrl: 'http://risuai:6001/' },
+  { proxy: 'setting-searchbar', containerName: 'setting-searchbar', healthUrl: 'http://setting-searchbar:3004/setting-searchbar/health' },
 ];
 
 const HEALTH_TIMEOUT_MS = 3000;

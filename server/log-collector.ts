@@ -16,6 +16,7 @@ const TARGETS: readonly ContainerTarget[] = [
   { containerName: 'remote-inlay', proxy: 'remote-inlay' },
   { containerName: 'caddy', proxy: 'caddy' },
   { containerName: 'risuai', proxy: 'risuai' },
+  { containerName: 'setting-searchbar', proxy: 'setting-searchbar' },
 ];
 
 const TIMESTAMP_RE = /^(\d{4}-\d{2}-\d{2}T[\d:.]+Z)\s(.+)$/;

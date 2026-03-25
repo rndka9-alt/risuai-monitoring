@@ -11,6 +11,7 @@ const PROXY_COLORS: Record<ProxyName, string> = {
   'remote-inlay': 'border-pink-500/40',
   caddy: 'border-cyan-500/40',
   risuai: 'border-orange-500/40',
+  'setting-searchbar': 'border-amber-500/40',
 };
 
 const STATUS_DOT: Record<string, string> = {
@@ -23,7 +24,7 @@ export function HealthBar({ health, isLoading }: HealthBarProps) {
   if (isLoading || !health) {
     return (
       <div className="flex gap-3 px-4 py-3 overflow-x-auto scrollbar-hide">
-        {Array.from({ length: 5 }).map((_, i) => (
+        {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
             className="h-16 min-w-[180px] rounded-lg bg-gray-900 animate-pulse shrink-0"
