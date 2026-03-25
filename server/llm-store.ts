@@ -6,7 +6,7 @@ import { logger } from './logger.js';
 
 export const streamEvents = new EventEmitter();
 
-const MAX_RECENT = 10;
+const MAX_RECENT = 30;
 const MAX_IMAGES_PER_REQUEST = 5;
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 2MB
 
