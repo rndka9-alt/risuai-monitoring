@@ -6,7 +6,7 @@ import { logger } from './logger.js';
 import { LogCollector } from './log-collector.js';
 import { addLog, getRecentLogs } from './log-store.js';
 import { handleLogStream } from './sse.js';
-import { startHealthPoller, getHealth } from './health-poller.js';
+import { startHealthPoller, getHealth, getResources, parseResourceBucket } from './health-poller.js';
 import { startMetricsAggregator, getMetrics, parseBucketSize } from './metrics-aggregator.js';
 import { handleLlmEvent, getStreams, getStreamImages, getStreamResponseBody, streamEvents } from './llm-store.js';
 
@@ -174,6 +174,12 @@ function handleApi(
   if (url.pathname === '/api/metrics') {
     const bucketMs = parseBucketSize(url.searchParams.get('bucket'));
     sendJson(res, getMetrics(bucketMs));
+    return;
+  }
+
+  if (url.pathname === '/api/resources') {
+    const bucketMs = parseResourceBucket(url.searchParams.get('bucket'));
+    sendJson(res, getResources(bucketMs));
     return;
   }
 

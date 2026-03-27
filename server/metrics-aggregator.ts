@@ -5,7 +5,6 @@ import type { LogEntry, ProxyName, MetricPoint, MetricsSnapshot } from '../src/t
 const BASE_BUCKET_MS = config.metricsBucketSizeMs;
 
 const VALID_BUCKET_SIZES: Record<string, number> = {
-  '5s': 5_000,
   '10s': 10_000,
   '30s': 30_000,
   '60s': 60_000,

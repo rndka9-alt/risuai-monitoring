@@ -2,7 +2,7 @@ import http from 'node:http';
 import { config } from './config.js';
 import { logger } from './logger.js';
 import { dockerGet, readBody } from './docker.js';
-import type { ProxyName, ProxyHealth, ContainerStats } from '../src/types.js';
+import type { ProxyName, ProxyHealth, ContainerStats, ResourcePoint, ResourceSnapshot, ResourceSeries } from '../src/types.js';
 
 interface HealthTarget {
   proxy: ProxyName;
@@ -20,6 +20,102 @@ const TARGETS: readonly HealthTarget[] = [
 ];
 
 const HEALTH_TIMEOUT_MS = 3000;
+
+const PROXIES: readonly ProxyName[] = TARGETS.map((t) => t.proxy);
+
+const VALID_BUCKET_SIZES: Record<string, number> = {
+  '10s': 10_000,
+  '30s': 30_000,
+  '60s': 60_000,
+  '1h': 3_600_000,
+};
+
+// --- Resource time-series ---
+
+const resourceHistory = new Map<ProxyName, ResourcePoint[]>();
+
+function pushResourcePoint(proxy: ProxyName, point: ResourcePoint): void {
+  let history = resourceHistory.get(proxy);
+  if (!history) {
+    history = [];
+    resourceHistory.set(proxy, history);
+  }
+  history.push(point);
+}
+
+function pruneResourceHistory(): void {
+  const cutoff = Date.now() - config.metricsRetentionMinutes * 60_000;
+  for (const history of resourceHistory.values()) {
+    let i = 0;
+    while (i < history.length && history[i].timestamp < cutoff) i++;
+    if (i > 0) history.splice(0, i);
+  }
+}
+
+function mergeResourcePoints(
+  raw: ResourcePoint[] | undefined,
+  targetBucketMs: number,
+  from: number,
+  to: number,
+): ResourcePoint[] {
+  const buckets = new Map<number, { cpuSum: number; memSum: number; count: number }>();
+
+  if (raw) {
+    for (const p of raw) {
+      if (p.timestamp < from || p.timestamp > to) continue;
+      const bucketTs = Math.floor(p.timestamp / targetBucketMs) * targetBucketMs;
+      let b = buckets.get(bucketTs);
+      if (!b) {
+        b = { cpuSum: 0, memSum: 0, count: 0 };
+        buckets.set(bucketTs, b);
+      }
+      b.cpuSum += p.cpuPercent;
+      b.memSum += p.memoryUsageMB;
+      b.count++;
+    }
+  }
+
+  const points: ResourcePoint[] = [];
+  const bucketStart = Math.floor(from / targetBucketMs) * targetBucketMs;
+
+  for (let ts = bucketStart; ts <= to; ts += targetBucketMs) {
+    const b = buckets.get(ts);
+    if (b && b.count > 0) {
+      points.push({
+        timestamp: ts,
+        cpuPercent: Math.round((b.cpuSum / b.count) * 10) / 10,
+        memoryUsageMB: Math.round(b.memSum / b.count),
+      });
+    } else {
+      points.push({ timestamp: ts, cpuPercent: 0, memoryUsageMB: 0 });
+    }
+  }
+
+  return points;
+}
+
+export function parseResourceBucket(param: string | null): number {
+  if (param && param in VALID_BUCKET_SIZES) {
+    return VALID_BUCKET_SIZES[param];
+  }
+  return 60_000;
+}
+
+export function getResources(targetBucketMs: number): ResourceSnapshot {
+  pruneResourceHistory();
+
+  const now = Date.now();
+  const from = now - config.metricsRetentionMinutes * 60_000;
+
+  const series: ResourceSeries[] = PROXIES.map((proxy) => ({
+    proxy,
+    points: mergeResourcePoints(resourceHistory.get(proxy), targetBucketMs, from, now),
+  }));
+
+  return { windowMinutes: config.metricsRetentionMinutes, series };
+}
+
+// --- Health ---
 
 let latestHealth: ProxyHealth[] = TARGETS.map((t) => ({
   proxy: t.proxy,
@@ -48,6 +144,17 @@ export function getHealth(): readonly ProxyHealth[] {
 
 async function poll(): Promise<void> {
   latestHealth = await Promise.all(TARGETS.map(pollTarget));
+
+  const now = Date.now();
+  for (const health of latestHealth) {
+    if (health.container) {
+      pushResourcePoint(health.proxy, {
+        timestamp: now,
+        cpuPercent: health.container.cpuPercent,
+        memoryUsageMB: health.container.memoryUsageMB,
+      });
+    }
+  }
 }
 
 async function pollTarget(target: HealthTarget): Promise<ProxyHealth> {

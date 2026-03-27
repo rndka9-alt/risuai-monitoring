@@ -16,7 +16,7 @@ export const config = {
   reconnectIntervalMs: 5000,
   tailLines: 100,
   healthIntervalMs: 10_000,
-  metricsBucketSizeMs: 5_000,
+  metricsBucketSizeMs: 10_000,
   metricsRetentionMinutes: Number(process.env.METRICS_RETENTION_MINUTES) || 180,
   metricsMaxTimingsPerBucket: 200,
   syncUrl: process.env.SYNC_URL ?? '',

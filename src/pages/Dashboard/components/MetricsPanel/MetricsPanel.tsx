@@ -9,7 +9,8 @@ import {
   Legend,
 } from 'recharts';
 import { useMetrics } from '@/hooks/useMetrics';
-import type { MetricsSnapshot, ProxyName } from '@/types';
+import { useResources } from '@/hooks/useResources';
+import type { MetricsSnapshot, ResourceSnapshot, ProxyName } from '@/types';
 
 const PROXY_STROKE: Record<ProxyName, string> = {
   sync: '#a855f7',
@@ -22,12 +23,11 @@ const PROXY_STROKE: Record<ProxyName, string> = {
 
 const PROXIES: readonly ProxyName[] = ['sync', 'with-sqlite', 'remote-inlay', 'caddy', 'risuai', 'setting-searchbar'];
 
-const BUCKET_OPTIONS = ['5s', '10s', '30s', '60s', '1h'] as const;
+const BUCKET_OPTIONS = ['10s', '30s', '60s', '1h'] as const;
 
 // 버킷 크기별 표시할 최대 포인트 수 → 차트 시간 범위 결정
-// 5s × 120 = 10분, 10s × 120 = 20분, 30s × 60 = 30분, 60s × 60 = 1시간, 1h × 6 = 6시간
+// 10s × 120 = 20분, 30s × 60 = 30분, 60s × 60 = 1시간, 1h × 6 = 6시간
 const BUCKET_MAX_POINTS: Record<string, number> = {
-  '5s': 120,
   '10s': 120,
   '30s': 60,
   '60s': 60,
@@ -40,19 +40,22 @@ interface MergedPoint {
 }
 
 function mergeSeriesFor(
-  metrics: MetricsSnapshot,
-  field: 'rps' | 'errorRate' | 'ttfbP50' | 'ttfbP95',
+  snapshot: MetricsSnapshot | ResourceSnapshot,
+  field: string,
 ): MergedPoint[] {
   const byTimestamp = new Map<number, MergedPoint>();
 
-  for (const s of metrics.series) {
+  for (const s of snapshot.series) {
     for (const p of s.points) {
       let row = byTimestamp.get(p.timestamp);
       if (!row) {
         row = { timestamp: p.timestamp };
         byTimestamp.set(p.timestamp, row);
       }
-      row[s.proxy] = p[field];
+      const value = (p as Record<string, number>)[field];
+      if (value !== undefined) {
+        row[s.proxy] = value;
+      }
     }
   }
 
@@ -157,7 +160,10 @@ function ChartCard({ title, description, data, unit }: ChartCardProps) {
 
 export function MetricsPanel() {
   const [bucket, setBucket] = useState('60s');
-  const { data: metrics, isLoading } = useMetrics(bucket);
+  const { data: metrics, isLoading: metricsLoading } = useMetrics(bucket);
+  const { data: resources, isLoading: resourcesLoading } = useResources(bucket);
+
+  const maxPoints = BUCKET_MAX_POINTS[bucket] ?? 60;
 
   return (
     <div>
@@ -181,8 +187,8 @@ export function MetricsPanel() {
         </div>
       </div>
 
-      {/* Charts */}
-      {isLoading || !metrics ? (
+      {/* Request metrics */}
+      {metricsLoading || !metrics ? (
         <div className="grid grid-cols-3 gap-3 px-4 py-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
@@ -196,19 +202,46 @@ export function MetricsPanel() {
           <ChartCard
             title="RPS (req/s)"
             description="Requests Per Second — 초당 처리된 요청 수. 프록시가 얼마나 바쁜지를 나타냅니다."
-            data={mergeSeriesFor(metrics, 'rps').slice(-(BUCKET_MAX_POINTS[bucket] ?? 60))}
+            data={mergeSeriesFor(metrics, 'rps').slice(-maxPoints)}
             unit=" r/s"
           />
           <ChartCard
             title="TTFB p50 (ms)"
             description="Time To First Byte — 요청 후 첫 응답 바이트까지 걸린 시간의 중앙값(p50). 응답 속도를 나타냅니다."
-            data={mergeSeriesFor(metrics, 'ttfbP50').slice(-(BUCKET_MAX_POINTS[bucket] ?? 60))}
+            data={mergeSeriesFor(metrics, 'ttfbP50').slice(-maxPoints)}
             unit="ms"
           />
           <ChartCard
             title="Error Rate"
             description="오류 비율 — 전체 요청 중 HTTP 400 이상 응답의 비율. 0이면 에러 없음, 1이면 전부 에러."
-            data={mergeSeriesFor(metrics, 'errorRate').slice(-(BUCKET_MAX_POINTS[bucket] ?? 60))}
+            data={mergeSeriesFor(metrics, 'errorRate').slice(-maxPoints)}
+          />
+        </div>
+      )}
+
+      {/* Resource metrics */}
+      {resourcesLoading || !resources ? (
+        <div className="grid grid-cols-2 gap-3 px-4 pb-3">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-[196px] rounded-lg bg-gray-900 animate-pulse"
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 px-4 pb-3">
+          <ChartCard
+            title="CPU (%)"
+            description="컨테이너별 CPU 사용률. Docker stats에서 10초마다 수집합니다."
+            data={mergeSeriesFor(resources, 'cpuPercent').slice(-maxPoints)}
+            unit="%"
+          />
+          <ChartCard
+            title="Memory (MB)"
+            description="컨테이너별 메모리 사용량(캐시 제외). Docker stats에서 10초마다 수집합니다."
+            data={mergeSeriesFor(resources, 'memoryUsageMB').slice(-maxPoints)}
+            unit=" MB"
           />
         </div>
       )}

@@ -71,6 +71,22 @@ export interface MetricsSnapshot {
   series: MetricsSeries[];
 }
 
+export interface ResourcePoint {
+  timestamp: number;
+  cpuPercent: number;
+  memoryUsageMB: number;
+}
+
+export interface ResourceSeries {
+  proxy: ProxyName;
+  points: ResourcePoint[];
+}
+
+export interface ResourceSnapshot {
+  windowMinutes: number;
+  series: ResourceSeries[];
+}
+
 // --- SQLite Browser ---
 
 export interface SqliteTable {
