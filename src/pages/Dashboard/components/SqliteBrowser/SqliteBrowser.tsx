@@ -79,6 +79,7 @@ function SchemaPanel({ table }: { table: string }) {
             <th className="pr-3 pb-1 font-normal">PK</th>
             <th className="pr-3 pb-1 font-normal">Not Null</th>
             <th className="pr-3 pb-1 font-normal">Default</th>
+            <th className="pr-3 pb-1 font-normal">Comment</th>
           </tr>
         </thead>
         <tbody>
@@ -92,6 +93,13 @@ function SchemaPanel({ table }: { table: string }) {
               <td className="pr-3 py-0.5">{col.pk ? <span className="text-amber-500">PK</span> : ''}</td>
               <td className="pr-3 py-0.5">{col.notnull ? 'YES' : ''}</td>
               <td className="pr-3 py-0.5 text-gray-500 truncate max-w-32">{col.dflt_value ?? ''}</td>
+              <td className="pr-3 py-0.5 text-gray-500 max-w-xs">
+                {col.comment && (
+                  <span className="whitespace-pre-line" title={col.comment}>
+                    {col.comment.split('\n')[0]}
+                  </span>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>

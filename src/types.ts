@@ -85,6 +85,7 @@ export interface SqliteColumn {
   notnull: number;
   dflt_value: string | null;
   pk: number;
+  comment: string | null;
 }
 
 export interface SqliteIndex {
