@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
-import { useSqliteTables, useSqliteSchema, useSqliteQuery } from '@/hooks/useSqlite';
-import type { SqliteQueryResult, SqliteReadResult } from '@/types';
+import { useSqliteTables, useSqliteSchema, useSqliteQuery, useSyncStatus, useSyncTrigger } from '@/hooks/useSqlite';
+import type { SqliteQueryResult, SqliteReadResult, SyncResult } from '@/types';
 
 const WRITE_PATTERN = /^\s*(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|REPLACE|TRUNCATE)\b/i;
 
@@ -169,6 +169,97 @@ function ResultsTable({ result }: { result: SqliteReadResult }) {
   );
 }
 
+// --- Sync Panel ---
+
+const HYDRATION_COLORS: Record<string, string> = {
+  COLD: 'text-blue-400 bg-blue-500/10',
+  WARMING: 'text-amber-400 bg-amber-500/10',
+  HOT: 'text-green-400 bg-green-500/10',
+};
+
+function SyncPanel() {
+  const { data: status } = useSyncStatus();
+  const syncTrigger = useSyncTrigger();
+  const [lastResult, setLastResult] = useState<SyncResult | null>(null);
+
+  const handleSync = useCallback(() => {
+    syncTrigger.mutate(undefined, {
+      onSuccess: (result) => setLastResult(result),
+    });
+  }, [syncTrigger]);
+
+  const colorClass = status ? (HYDRATION_COLORS[status.hydrationState] ?? 'text-gray-400') : 'text-gray-600';
+
+  return (
+    <div className="flex items-center gap-3 flex-wrap">
+      {/* Hydration state badge */}
+      {status && (
+        <span className={`text-[11px] px-2 py-0.5 rounded font-medium ${colorClass}`}>
+          {status.hydrationState}
+          {status.hydrationState === 'WARMING' && (
+            <span className="text-gray-500 ml-1">
+              ({status.capturedRemotes}/{status.expectedRemotes})
+            </span>
+          )}
+        </span>
+      )}
+
+      {status && (
+        <span className="text-[11px] text-gray-600">
+          {status.capturedRemotes} remotes cached
+        </span>
+      )}
+
+      {/* Sync trigger button */}
+      <button
+        onClick={handleSync}
+        disabled={syncTrigger.isPending}
+        className="text-[11px] px-2 py-0.5 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 rounded transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        {syncTrigger.isPending ? 'Syncing...' : 'Sync Now'}
+      </button>
+
+      {/* Error */}
+      {syncTrigger.isError && (
+        <span className="text-[11px] text-red-400">
+          {syncTrigger.error instanceof Error ? syncTrigger.error.message : 'Sync failed'}
+        </span>
+      )}
+
+      {/* Last result */}
+      {lastResult && !syncTrigger.isPending && (
+        <SyncResultBadge result={lastResult} />
+      )}
+    </div>
+  );
+}
+
+function SyncResultBadge({ result }: { result: SyncResult }) {
+  if (result.skipped) {
+    return <span className="text-[11px] text-amber-400">Skipped: {result.skipped}</span>;
+  }
+
+  const hasDrift = result.filesAdded > 0 || result.filesRemoved > 0
+    || result.metaUpdated > 0 || result.dbBinDrift || result.remotesUpdated > 0;
+
+  if (!hasDrift) {
+    return <span className="text-[11px] text-green-400">No drift ({result.elapsedMs}ms)</span>;
+  }
+
+  const parts: string[] = [];
+  if (result.filesAdded > 0) parts.push(`+${result.filesAdded} files`);
+  if (result.filesRemoved > 0) parts.push(`-${result.filesRemoved} files`);
+  if (result.metaUpdated > 0) parts.push(`${result.metaUpdated} meta`);
+  if (result.dbBinDrift) parts.push('db.bin');
+  if (result.remotesUpdated > 0) parts.push(`${result.remotesUpdated} remotes`);
+
+  return (
+    <span className="text-[11px] text-amber-400">
+      Drift: {parts.join(', ')} ({result.elapsedMs}ms)
+    </span>
+  );
+}
+
 // --- Write Confirm Dialog ---
 
 function WriteConfirmDialog({
@@ -296,6 +387,11 @@ export function SqliteBrowser() {
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Sync status bar */}
+        <div className="shrink-0 px-4 py-2 border-b border-gray-800">
+          <SyncPanel />
+        </div>
+
         {/* Schema (collapsed when no table selected) */}
         {selectedTable && (
           <div className="shrink-0">

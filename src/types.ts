@@ -117,3 +117,22 @@ export interface SqliteWriteResult {
 }
 
 export type SqliteQueryResult = SqliteReadResult | SqliteWriteResult;
+
+// --- Sync Status ---
+
+export interface SyncStatus {
+  hydrationState: 'COLD' | 'WARMING' | 'HOT';
+  capturedRemotes: number;
+  expectedRemotes: number;
+  dbReady: boolean;
+}
+
+export interface SyncResult {
+  filesAdded: number;
+  filesRemoved: number;
+  metaUpdated: number;
+  dbBinDrift: boolean;
+  remotesUpdated: number;
+  elapsedMs: number;
+  skipped?: string;
+}

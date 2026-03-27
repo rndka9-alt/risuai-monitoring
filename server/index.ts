@@ -177,10 +177,15 @@ function handleApi(
     return;
   }
 
-  // --- SQLite proxy → with-sqlite /_internal/sql/* ---
-  if (url.pathname.startsWith('/api/sqlite/') && config.sqliteUrl) {
-    const subPath = url.pathname.replace('/api/sqlite/', '');
-    const target = `${config.sqliteUrl}/_internal/sql/${subPath}`;
+  // --- with-sqlite /_internal/* proxy ---
+  // /api/sqlite/*  → /_internal/sql/*
+  // /api/sync/*    → /_internal/sync/*
+  const sqliteMatch = url.pathname.startsWith('/api/sqlite/') && config.sqliteUrl;
+  const syncMatch = url.pathname.startsWith('/api/sync/') && config.sqliteUrl;
+  if (sqliteMatch || syncMatch) {
+    const target = sqliteMatch
+      ? `${config.sqliteUrl}/_internal/sql/${url.pathname.replace('/api/sqlite/', '')}`
+      : `${config.sqliteUrl}/_internal/sync/${url.pathname.replace('/api/sync/', '')}`;
 
     if (req.method === 'POST') {
       readRequestBody(req).then((body) => {
