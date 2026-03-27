@@ -266,7 +266,10 @@ async function getContainerStats(
     if (memStats) {
       const usage = Number(memStats.usage) || 0;
       const statsObj = isRecord(memStats.stats) ? memStats.stats : null;
-      const cache = statsObj ? Number(statsObj.cache) || 0 : 0;
+      // cgroup v1: stats.cache, cgroup v2: stats.inactive_file
+      const cache = statsObj
+        ? Number(statsObj.cache) || Number(statsObj.inactive_file) || 0
+        : 0;
       memoryUsageMB = Math.round((usage - cache) / 1024 / 1024);
       memoryLimitMB = Math.round(Number(memStats.limit) / 1024 / 1024);
     }
