@@ -70,3 +70,50 @@ export interface MetricsSnapshot {
   windowMinutes: number;
   series: MetricsSeries[];
 }
+
+// --- SQLite Browser ---
+
+export interface SqliteTable {
+  name: string;
+  type: string;
+}
+
+export interface SqliteColumn {
+  cid: number;
+  name: string;
+  type: string;
+  notnull: number;
+  dflt_value: string | null;
+  pk: number;
+}
+
+export interface SqliteIndex {
+  seq: number;
+  name: string;
+  unique: number;
+}
+
+export interface SqliteSchemaResponse {
+  table: string;
+  columns: SqliteColumn[];
+  indexes: SqliteIndex[];
+  rowCount: number;
+}
+
+export interface SqliteReadResult {
+  type: 'read';
+  columns: string[];
+  rows: Record<string, unknown>[];
+  totalRows: number;
+  truncated: boolean;
+  elapsedMs: number;
+}
+
+export interface SqliteWriteResult {
+  type: 'write';
+  changes: number;
+  lastInsertRowid: number;
+  elapsedMs: number;
+}
+
+export type SqliteQueryResult = SqliteReadResult | SqliteWriteResult;

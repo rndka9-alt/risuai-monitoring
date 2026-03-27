@@ -177,6 +177,45 @@ function handleApi(
     return;
   }
 
+  // --- SQLite proxy → with-sqlite /_internal/sql/* ---
+  if (url.pathname.startsWith('/api/sqlite/') && config.sqliteUrl) {
+    const subPath = url.pathname.replace('/api/sqlite/', '');
+    const target = `${config.sqliteUrl}/_internal/sql/${subPath}`;
+
+    if (req.method === 'POST') {
+      readRequestBody(req).then((body) => {
+        fetch(target, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        })
+          .then(async (upstream) => {
+            const text = await upstream.text();
+            res.writeHead(upstream.status, { 'Content-Type': 'application/json' });
+            res.end(text);
+          })
+          .catch((err: unknown) => {
+            const message = err instanceof Error ? err.message : 'unknown error';
+            res.writeHead(502, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: message }));
+          });
+      });
+    } else {
+      fetch(target)
+        .then(async (upstream) => {
+          const text = await upstream.text();
+          res.writeHead(upstream.status, { 'Content-Type': 'application/json' });
+          res.end(text);
+        })
+        .catch((err: unknown) => {
+          const message = err instanceof Error ? err.message : 'unknown error';
+          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: message }));
+        });
+    }
+    return;
+  }
+
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'not found' }));
 }

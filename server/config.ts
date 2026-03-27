@@ -20,6 +20,7 @@ export const config = {
   metricsRetentionMinutes: Number(process.env.METRICS_RETENTION_MINUTES) || 180,
   metricsMaxTimingsPerBucket: 200,
   syncUrl: process.env.SYNC_URL ?? '',
+  sqliteUrl: process.env.SQLITE_URL ?? 'http://with-sqlite:3001',
   /** active stream heartbeat 주기 (ms) */
   streamHeartbeatIntervalMs: 10_000,
 };
