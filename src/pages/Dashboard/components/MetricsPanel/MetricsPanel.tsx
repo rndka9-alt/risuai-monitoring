@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   LineChart,
   Line,
@@ -66,14 +66,46 @@ function formatTime(ts: number): string {
 
 interface ChartCardProps {
   title: string;
+  description: string;
   data: MergedPoint[];
   unit?: string;
 }
 
-function ChartCard({ title, data, unit }: ChartCardProps) {
+function TitleTooltip({ text, description }: { text: string; description: string }) {
+  const [open, setOpen] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+  function show() {
+    clearTimeout(timeoutRef.current);
+    setOpen(true);
+  }
+
+  function hide() {
+    timeoutRef.current = setTimeout(() => setOpen(false), 150);
+  }
+
+  return (
+    <span
+      className="relative cursor-help"
+      onMouseEnter={show}
+      onMouseLeave={hide}
+    >
+      <span className="border-b border-dashed border-gray-600">{text}</span>
+      {open && (
+        <span className="absolute left-0 top-full mt-1 z-50 w-56 rounded-md bg-gray-800 border border-gray-700 px-3 py-2 text-[11px] leading-relaxed text-gray-300 shadow-lg">
+          {description}
+        </span>
+      )}
+    </span>
+  );
+}
+
+function ChartCard({ title, description, data, unit }: ChartCardProps) {
   return (
     <div className="bg-gray-900 rounded-lg p-3">
-      <h3 className="text-xs font-medium text-gray-400 mb-2">{title}</h3>
+      <h3 className="text-xs font-medium text-gray-400 mb-2">
+        <TitleTooltip text={title} description={description} />
+      </h3>
       <ResponsiveContainer width="100%" height={140}>
         <LineChart data={data}>
           <XAxis
@@ -161,9 +193,23 @@ export function MetricsPanel() {
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-3 px-4 py-3">
-          <ChartCard title="RPS (req/s)" data={mergeSeriesFor(metrics, 'rps').slice(-(BUCKET_MAX_POINTS[bucket] ?? 60))} unit=" r/s" />
-          <ChartCard title="TTFB p50 (ms)" data={mergeSeriesFor(metrics, 'ttfbP50').slice(-(BUCKET_MAX_POINTS[bucket] ?? 60))} unit="ms" />
-          <ChartCard title="Error Rate" data={mergeSeriesFor(metrics, 'errorRate').slice(-(BUCKET_MAX_POINTS[bucket] ?? 60))} />
+          <ChartCard
+            title="RPS (req/s)"
+            description="Requests Per Second — 초당 처리된 요청 수. 프록시가 얼마나 바쁜지를 나타냅니다."
+            data={mergeSeriesFor(metrics, 'rps').slice(-(BUCKET_MAX_POINTS[bucket] ?? 60))}
+            unit=" r/s"
+          />
+          <ChartCard
+            title="TTFB p50 (ms)"
+            description="Time To First Byte — 요청 후 첫 응답 바이트까지 걸린 시간의 중앙값(p50). 응답 속도를 나타냅니다."
+            data={mergeSeriesFor(metrics, 'ttfbP50').slice(-(BUCKET_MAX_POINTS[bucket] ?? 60))}
+            unit="ms"
+          />
+          <ChartCard
+            title="Error Rate"
+            description="오류 비율 — 전체 요청 중 HTTP 400 이상 응답의 비율. 0이면 에러 없음, 1이면 전부 에러."
+            data={mergeSeriesFor(metrics, 'errorRate').slice(-(BUCKET_MAX_POINTS[bucket] ?? 60))}
+          />
         </div>
       )}
     </div>
