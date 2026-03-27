@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { useMetrics } from '@/hooks/useMetrics';
 import { useResources } from '@/hooks/useResources';
+import { useDragScroll } from '@/hooks/useDragScroll';
 import type { MetricsSnapshot, ResourceSnapshot, ProxyName } from '@/types';
 
 const PROXY_STROKE: Record<ProxyName, string> = {
@@ -105,7 +106,7 @@ function TitleTooltip({ text, description }: { text: string; description: string
 
 function ChartCard({ title, description, data, unit }: ChartCardProps) {
   return (
-    <div className="bg-gray-900 rounded-lg p-3">
+    <div className="min-w-[320px] shrink-0 bg-gray-900 rounded-lg p-3">
       <h3 className="text-xs font-medium text-gray-400 mb-2">
         <TitleTooltip text={title} description={description} />
       </h3>
@@ -162,8 +163,10 @@ export function MetricsPanel() {
   const [bucket, setBucket] = useState('60s');
   const { data: metrics, isLoading: metricsLoading } = useMetrics(bucket);
   const { data: resources, isLoading: resourcesLoading } = useResources(bucket);
+  const { scrollRef, onMouseDown, onClickCapture } = useDragScroll();
 
   const maxPoints = BUCKET_MAX_POINTS[bucket] ?? 60;
+  const isLoading = metricsLoading || resourcesLoading;
 
   return (
     <div>
@@ -187,64 +190,54 @@ export function MetricsPanel() {
         </div>
       </div>
 
-      {/* Request metrics */}
-      {metricsLoading || !metrics ? (
-        <div className="grid grid-cols-3 gap-3 px-4 py-3">
-          {Array.from({ length: 3 }).map((_, i) => (
+      {/* Charts */}
+      <div
+        ref={scrollRef}
+        className="flex gap-3 px-4 py-3 overflow-x-auto scrollbar-hide"
+        onMouseDown={onMouseDown}
+        onClickCapture={onClickCapture}
+      >
+        {isLoading || !metrics || !resources ? (
+          Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="h-[196px] rounded-lg bg-gray-900 animate-pulse"
+              className="h-[196px] min-w-[320px] shrink-0 rounded-lg bg-gray-900 animate-pulse"
             />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-3 px-4 py-3">
-          <ChartCard
-            title="RPS (req/s)"
-            description="Requests Per Second — 초당 처리된 요청 수. 프록시가 얼마나 바쁜지를 나타냅니다."
-            data={mergeSeriesFor(metrics, 'rps').slice(-maxPoints)}
-            unit=" r/s"
-          />
-          <ChartCard
-            title="TTFB p50 (ms)"
-            description="Time To First Byte — 요청 후 첫 응답 바이트까지 걸린 시간의 중앙값(p50). 응답 속도를 나타냅니다."
-            data={mergeSeriesFor(metrics, 'ttfbP50').slice(-maxPoints)}
-            unit="ms"
-          />
-          <ChartCard
-            title="Error Rate"
-            description="오류 비율 — 전체 요청 중 HTTP 400 이상 응답의 비율. 0이면 에러 없음, 1이면 전부 에러."
-            data={mergeSeriesFor(metrics, 'errorRate').slice(-maxPoints)}
-          />
-        </div>
-      )}
-
-      {/* Resource metrics */}
-      {resourcesLoading || !resources ? (
-        <div className="grid grid-cols-2 gap-3 px-4 pb-3">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-[196px] rounded-lg bg-gray-900 animate-pulse"
+          ))
+        ) : (
+          <>
+            <ChartCard
+              title="RPS (req/s)"
+              description="Requests Per Second — 초당 처리된 요청 수. 프록시가 얼마나 바쁜지를 나타냅니다."
+              data={mergeSeriesFor(metrics, 'rps').slice(-maxPoints)}
+              unit=" r/s"
             />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 px-4 pb-3">
-          <ChartCard
-            title="CPU (%)"
-            description="컨테이너별 CPU 사용률. Docker stats에서 10초마다 수집합니다."
-            data={mergeSeriesFor(resources, 'cpuPercent').slice(-maxPoints)}
-            unit="%"
-          />
-          <ChartCard
-            title="Memory (MB)"
-            description="컨테이너별 메모리 사용량(캐시 제외). Docker stats에서 10초마다 수집합니다."
-            data={mergeSeriesFor(resources, 'memoryUsageMB').slice(-maxPoints)}
-            unit=" MB"
-          />
-        </div>
-      )}
+            <ChartCard
+              title="TTFB p50 (ms)"
+              description="Time To First Byte — 요청 후 첫 응답 바이트까지 걸린 시간의 중앙값(p50). 응답 속도를 나타냅니다."
+              data={mergeSeriesFor(metrics, 'ttfbP50').slice(-maxPoints)}
+              unit="ms"
+            />
+            <ChartCard
+              title="Error Rate"
+              description="오류 비율 — 전체 요청 중 HTTP 400 이상 응답의 비율. 0이면 에러 없음, 1이면 전부 에러."
+              data={mergeSeriesFor(metrics, 'errorRate').slice(-maxPoints)}
+            />
+            <ChartCard
+              title="CPU (%)"
+              description="컨테이너별 CPU 사용률. Docker stats에서 10초마다 수집합니다."
+              data={mergeSeriesFor(resources, 'cpuPercent').slice(-maxPoints)}
+              unit="%"
+            />
+            <ChartCard
+              title="Memory (MB)"
+              description="컨테이너별 메모리 사용량(캐시 제외). Docker stats에서 10초마다 수집합니다."
+              data={mergeSeriesFor(resources, 'memoryUsageMB').slice(-maxPoints)}
+              unit=" MB"
+            />
+          </>
+        )}
+      </div>
     </div>
   );
 }
