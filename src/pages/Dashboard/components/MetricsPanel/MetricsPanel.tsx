@@ -193,7 +193,7 @@ export function MetricsPanel() {
       {/* Charts */}
       <div
         ref={scrollRef}
-        className="flex gap-3 px-4 py-3 overflow-x-auto scrollbar-hide"
+        className="flex gap-3 px-4 pt-3 pb-40 -mb-[148px] overflow-x-auto overflow-y-hidden scrollbar-hide select-none"
         onMouseDown={onMouseDown}
         onClickCapture={onClickCapture}
       >
@@ -201,7 +201,7 @@ export function MetricsPanel() {
           Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="h-[196px] min-w-[320px] shrink-0 rounded-lg bg-gray-900 animate-pulse"
+              className="h-[180px] min-w-[320px] shrink-0 rounded-lg bg-gray-900 animate-pulse"
             />
           ))
         ) : (

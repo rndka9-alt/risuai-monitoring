@@ -20,6 +20,7 @@ export function useDragScroll() {
       const dx = e.clientX - state.current.startX;
       if (Math.abs(dx) > DRAG_THRESHOLD) state.current.dragged = true;
       if (state.current.dragged) {
+        e.preventDefault();
         el.scrollLeft = state.current.scrollLeft - dx;
       }
     };
