@@ -5,6 +5,7 @@ import type {
   SqliteQueryResult,
   SyncStatus,
   SyncResult,
+  CharacterDeleteResult,
 } from '@/types';
 
 export function useSqliteTables() {
@@ -91,6 +92,28 @@ export function useSyncTrigger() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sync', 'status'] });
+      queryClient.invalidateQueries({ queryKey: ['sqlite'] });
+    },
+  });
+}
+
+export function useCharacterDelete() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (charId: string): Promise<CharacterDeleteResult> => {
+      const res = await fetch('/api/character/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ charId }),
+      });
+      const body: unknown = await res.json();
+      if (typeof body !== 'object' || body === null) {
+        throw new Error(`${res.status} ${res.statusText}`);
+      }
+      return body as CharacterDeleteResult;
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sqlite'] });
     },
   });

@@ -154,6 +154,15 @@ export interface SyncResult {
   skipped?: string;
 }
 
+// --- Character Delete ---
+
+export interface CharacterDeleteResult {
+  ok: boolean;
+  charId: string;
+  fileRemoved: boolean;
+  error?: string;
+}
+
 // --- Asset Validator ---
 
 export interface AssetIssue {
