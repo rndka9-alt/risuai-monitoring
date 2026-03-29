@@ -84,22 +84,50 @@ function str(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
-// ── Asset listing ──────────────────────────────────────────────────
+/**
+ * RisuAI Node 서버는 파일 경로를 hex 인코딩해서 flat하게 저장한다.
+ * e.g. "assets/abc.png" → "6173736574732f6162632e706e67"
+ */
+function hexDecode(hex: string): string | null {
+  try {
+    return Buffer.from(hex, 'hex').toString('utf-8');
+  } catch {
+    return null;
+  }
+}
 
-async function listExistingAssets(): Promise<Set<string>> {
-  const assetsDir = path.join(config.saveMountPath, 'assets');
-  const set = new Set<string>();
+// ── Save directory scan ────────────────────────────────────────────
+
+interface SaveScan {
+  assetPaths: Set<string>;
+  characterHexNames: string[];
+}
+
+/**
+ * /risuai-save/ 디렉터리를 한 번 스캔하여
+ * 에셋 경로 Set과 캐릭터 파일 목록을 동시에 구축한다.
+ */
+async function scanSaveDirectory(): Promise<SaveScan> {
+  const assetPaths = new Set<string>();
+  const characterHexNames: string[] = [];
 
   try {
-    const files = await readdir(assetsDir);
-    for (const file of files) {
-      set.add(`assets/${file}`);
+    const hexNames = await readdir(config.saveMountPath);
+    for (const hexName of hexNames) {
+      const decoded = hexDecode(hexName);
+      if (!decoded) continue;
+
+      if (decoded.startsWith('assets/')) {
+        assetPaths.add(decoded);
+      } else if (decoded.startsWith('remotes/') && decoded.endsWith('.local.bin')) {
+        characterHexNames.push(hexName);
+      }
     }
   } catch {
-    logger.warn(`Could not read assets directory: ${assetsDir}`);
+    logger.warn(`Could not read save directory: ${config.saveMountPath}`);
   }
 
-  return set;
+  return { assetPaths, characterHexNames };
 }
 
 // ── Direct asset extraction ────────────────────────────────────────
@@ -295,6 +323,37 @@ async function loadModules(): Promise<RisuModule[]> {
   }
 }
 
+/** with-sqlite의 characters 테이블에서 소프트 딜리트되지 않은 char_id 목록을 가져온다. */
+async function fetchActiveCharacterIds(): Promise<Set<string> | null> {
+  if (!config.sqliteUrl) return null;
+
+  try {
+    const res = await fetch(`${config.sqliteUrl}/_internal/sql/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sql: 'SELECT char_id FROM characters WHERE __ws_deleted_at IS NULL',
+      }),
+    });
+
+    if (!res.ok) return null;
+
+    const result: unknown = await res.json();
+    if (!isRecord(result) || result.type !== 'read' || !Array.isArray(result.rows)) return null;
+
+    const ids = new Set<string>();
+    for (const row of result.rows) {
+      if (isRecord(row) && typeof row.char_id === 'string') {
+        ids.add(row.char_id);
+      }
+    }
+    return ids;
+  } catch {
+    logger.warn('Could not fetch active character IDs from with-sqlite');
+    return null;
+  }
+}
+
 function buildModuleAssetMap(modules: RisuModule[]): AssetMap {
   const map: AssetMap = new Map();
   for (const mod of modules) {
@@ -376,34 +435,38 @@ function validateModules(
 // ── Main validation ────────────────────────────────────────────────
 
 export async function runValidation(): Promise<ValidationResult> {
-  const existingAssets = await listExistingAssets();
-  logger.info(`Asset validator: ${existingAssets.size} files found in assets/`);
+  const [saveScan, activeCharIds] = await Promise.all([
+    scanSaveDirectory(),
+    fetchActiveCharacterIds(),
+  ]);
+  const { assetPaths: existingAssets, characterHexNames } = saveScan;
+  logger.info(
+    `Asset validator: ${existingAssets.size} assets, ${characterHexNames.length} character files, ` +
+      `${activeCharIds ? activeCharIds.size : '?'} active in DB`,
+  );
 
   // Load modules for template resolution + module validation
   const modules = await loadModules();
   const moduleAssetMap = buildModuleAssetMap(modules);
 
-  // Process character files one at a time to limit memory
-  const remotesDir = path.join(config.saveMountPath, 'remotes');
-  let fileNames: string[];
-  try {
-    fileNames = (await readdir(remotesDir)).filter((f) => f.endsWith('.local.bin'));
-  } catch {
-    logger.warn(`Could not read remotes directory: ${remotesDir}`);
-    fileNames = [];
-  }
-
   const characters: CharacterIssues[] = [];
   let totalAssets = 0;
   let totalMissing = 0;
 
-  for (const fileName of fileNames) {
+  // Process character files one at a time to limit memory
+  for (const hexName of characterHexNames) {
     try {
-      const content = await readFile(path.join(remotesDir, fileName), 'utf-8');
+      const filePath = path.join(config.saveMountPath, hexName);
+      const content = await readFile(filePath, 'utf-8');
       const data: unknown = JSON.parse(content);
       if (!isRecord(data)) continue;
 
-      const charId = fileName.replace('.local.bin', '');
+      const decoded = hexDecode(hexName) ?? hexName;
+      // "remotes/{charId}.local.bin" → charId
+      const charId = decoded.replace(/^remotes\//, '').replace(/\.local\.bin$/, '');
+
+      // with-sqlite에서 소프트 딜리트된 캐릭터는 제외
+      if (activeCharIds && !activeCharIds.has(charId)) continue;
       const charName = str(data.name) || charId;
       const charType = str(data.type) || 'character';
 

@@ -81,14 +81,8 @@ function IssueRow({ issue }: { issue: AssetIssue }) {
   );
 }
 
-function CharacterCard({
-  character,
-  defaultExpanded,
-}: {
-  character: CharacterIssues;
-  defaultExpanded: boolean;
-}) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
+function CharacterCard({ character }: { character: CharacterIssues }) {
+  const [expanded, setExpanded] = useState(false);
   const hasMissing = character.issues.length > 0;
 
   return (
@@ -136,14 +130,8 @@ function CharacterCard({
   );
 }
 
-function ModuleCard({
-  module,
-  defaultExpanded,
-}: {
-  module: ModuleIssues;
-  defaultExpanded: boolean;
-}) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
+function ModuleCard({ module }: { module: ModuleIssues }) {
+  const [expanded, setExpanded] = useState(false);
   const hasMissing = module.issues.length > 0;
 
   return (
@@ -335,18 +323,10 @@ export function AssetValidator() {
         ) : (
           <>
             {filteredCharacters.map((char) => (
-              <CharacterCard
-                key={char.characterId}
-                character={char}
-                defaultExpanded={char.issues.length > 0 && char.issues.length <= 10}
-              />
+              <CharacterCard key={char.characterId} character={char} />
             ))}
             {filteredModules.map((mod) => (
-              <ModuleCard
-                key={mod.moduleId}
-                module={mod}
-                defaultExpanded={mod.issues.length > 0 && mod.issues.length <= 10}
-              />
+              <ModuleCard key={mod.moduleId} module={mod} />
             ))}
           </>
         )}
