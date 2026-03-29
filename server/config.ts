@@ -24,4 +24,5 @@ export const config = {
   remoteInlayUrl: process.env.REMOTE_INLAY_URL ?? 'http://remote-inlay:3003',
   /** active stream heartbeat 주기 (ms) */
   streamHeartbeatIntervalMs: 10_000,
+  saveMountPath: process.env.SAVE_MOUNT_PATH ?? '/risuai-save',
 };

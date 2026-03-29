@@ -1,0 +1,1 @@
+export { AssetValidator } from './AssetValidator';

@@ -8,6 +8,7 @@ import { ActiveStreams } from './components/ActiveStreams';
 import { SearchbarIndex } from './components/SearchbarIndex';
 import { SqliteBrowser } from './components/SqliteBrowser';
 import { InlayGallery } from './components/InlayGallery';
+import { AssetValidator } from './components/AssetValidator';
 import type { ProxyName } from '@/types';
 
 function DashboardTab() {
@@ -34,10 +35,48 @@ function SyncTab() {
   );
 }
 
-function WithSqliteTab() {
+type SqliteSubTab = 'browser' | 'validator';
+
+function SubTabBar({
+  value,
+  onChange,
+}: {
+  value: SqliteSubTab;
+  onChange: (v: SqliteSubTab) => void;
+}) {
+  const tabs: { id: SqliteSubTab; label: string }[] = [
+    { id: 'browser', label: 'SQL Browser' },
+    { id: 'validator', label: 'Asset Validator' },
+  ];
+
   return (
-    <main className="flex-1 overflow-hidden">
-      <SqliteBrowser />
+    <div className="flex items-center gap-1 px-4 py-1.5 border-b border-gray-800">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => onChange(tab.id)}
+          className={`text-[11px] px-2.5 py-1 rounded transition-colors ${
+            value === tab.id
+              ? 'bg-emerald-500/20 text-emerald-300'
+              : 'text-gray-500 hover:text-gray-300'
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function WithSqliteTab() {
+  const [subTab, setSubTab] = useState<SqliteSubTab>('browser');
+
+  return (
+    <main className="flex-1 overflow-hidden flex flex-col">
+      <SubTabBar value={subTab} onChange={setSubTab} />
+      <div className="flex-1 overflow-hidden">
+        {subTab === 'browser' ? <SqliteBrowser /> : <AssetValidator />}
+      </div>
     </main>
   );
 }

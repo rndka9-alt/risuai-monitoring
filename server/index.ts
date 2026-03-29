@@ -9,6 +9,7 @@ import { handleLogStream } from './sse.js';
 import { startHealthPoller, getHealth, getResources, parseResourceBucket } from './health-poller.js';
 import { startMetricsAggregator, getMetrics, parseBucketSize } from './metrics-aggregator.js';
 import { handleLlmEvent, getStreams, getStreamImages, getStreamResponseBody, streamEvents } from './llm-store.js';
+import { runValidation } from './asset-validator.js';
 
 const DIST_CLIENT = path.join(import.meta.dirname, 'client');
 
@@ -311,6 +312,17 @@ function handleApi(
       .catch((err: unknown) => {
         const message = err instanceof Error ? err.message : 'unknown error';
         res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: message }));
+      });
+    return;
+  }
+
+  if (url.pathname === '/api/validator/run') {
+    runValidation()
+      .then((result) => sendJson(res, result))
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : 'unknown error';
+        res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: message }));
       });
     return;

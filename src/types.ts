@@ -153,3 +153,35 @@ export interface SyncResult {
   elapsedMs: number;
   skipped?: string;
 }
+
+// --- Asset Validator ---
+
+export interface AssetIssue {
+  field: string;
+  assetName: string;
+  assetPath: string;
+}
+
+export interface CharacterIssues {
+  characterId: string;
+  characterName: string;
+  type: string;
+  totalAssets: number;
+  issues: AssetIssue[];
+}
+
+export interface ModuleIssues {
+  moduleId: string;
+  moduleName: string;
+  totalAssets: number;
+  issues: AssetIssue[];
+}
+
+export interface ValidationResult {
+  totalCharacters: number;
+  totalAssets: number;
+  totalMissing: number;
+  characters: CharacterIssues[];
+  modules: ModuleIssues[];
+  scannedAt: number;
+}
