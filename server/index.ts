@@ -243,6 +243,40 @@ function handleApi(
     return;
   }
 
+  if (url.pathname === '/api/inlay/bookmarks' && config.remoteInlayUrl) {
+    fetch(`${config.remoteInlayUrl}/remote-inlay/bookmarks`)
+      .then(async (upstream) => {
+        const body = await upstream.text();
+        res.writeHead(upstream.status, { 'Content-Type': 'application/json' });
+        res.end(body);
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : 'unknown error';
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: message }));
+      });
+    return;
+  }
+
+  const inlayBookmarkMatch = url.pathname.match(/^\/api\/inlay\/assets\/([^/]+)\/bookmark$/);
+  if (inlayBookmarkMatch && req.method === 'POST' && config.remoteInlayUrl) {
+    const assetId = inlayBookmarkMatch[1];
+    fetch(`${config.remoteInlayUrl}/remote-inlay/assets/${encodeURIComponent(assetId)}/bookmark`, {
+      method: 'POST',
+    })
+      .then(async (upstream) => {
+        const body = await upstream.text();
+        res.writeHead(upstream.status, { 'Content-Type': 'application/json' });
+        res.end(body);
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : 'unknown error';
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: message }));
+      });
+    return;
+  }
+
   const inlayAssetMatch = url.pathname.match(/^\/api\/inlay\/assets\/(.+)$/);
   if (inlayAssetMatch && config.remoteInlayUrl) {
     const assetId = inlayAssetMatch[1];

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export interface InlayAssetMeta {
   ext: string;
@@ -18,6 +18,44 @@ export function useInlayAssets() {
       return data.filter((v): v is string => typeof v === 'string');
     },
     staleTime: 30_000,
+  });
+}
+
+export function useInlayBookmarks() {
+  return useQuery({
+    queryKey: ['inlay-bookmarks'],
+    queryFn: async (): Promise<string[]> => {
+      const res = await fetch('/api/inlay/bookmarks');
+      const data: unknown = await res.json();
+      if (!Array.isArray(data)) return [];
+      return data.filter((v): v is string => typeof v === 'string');
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useToggleBookmark() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string): Promise<boolean> => {
+      const res = await fetch(`/api/inlay/assets/${encodeURIComponent(id)}/bookmark`, {
+        method: 'POST',
+      });
+      const data: unknown = await res.json();
+      if (typeof data === 'object' && data !== null && 'bookmarked' in data
+        && typeof data.bookmarked === 'boolean') {
+        return data.bookmarked;
+      }
+      return false;
+    },
+    onSuccess: (_bookmarked, id) => {
+      queryClient.setQueryData<string[]>(['inlay-bookmarks'], (old) => {
+        if (!old) return _bookmarked ? [id] : [];
+        return _bookmarked
+          ? [...old, id]
+          : old.filter((v) => v !== id);
+      });
+    },
   });
 }
 
