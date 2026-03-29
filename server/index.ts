@@ -227,6 +227,61 @@ function handleApi(
     return;
   }
 
+  // --- remote-inlay proxy ---
+  if (url.pathname === '/api/inlay/assets' && config.remoteInlayUrl) {
+    fetch(`${config.remoteInlayUrl}/remote-inlay/assets`)
+      .then(async (upstream) => {
+        const body = await upstream.text();
+        res.writeHead(upstream.status, { 'Content-Type': 'application/json' });
+        res.end(body);
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : 'unknown error';
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: message }));
+      });
+    return;
+  }
+
+  const inlayAssetMatch = url.pathname.match(/^\/api\/inlay\/assets\/(.+)$/);
+  if (inlayAssetMatch && config.remoteInlayUrl) {
+    const assetId = inlayAssetMatch[1];
+    fetch(`${config.remoteInlayUrl}/remote-inlay/assets/${encodeURIComponent(assetId)}`)
+      .then(async (upstream) => {
+        if (upstream.status !== 200) {
+          res.writeHead(upstream.status);
+          res.end();
+          return;
+        }
+        const buffer = Buffer.from(await upstream.arrayBuffer());
+        const ext = upstream.headers.get('x-inlay-ext') ?? 'png';
+        const mimeMap: Record<string, string> = {
+          png: 'image/png',
+          jpg: 'image/jpeg',
+          jpeg: 'image/jpeg',
+          webp: 'image/webp',
+          gif: 'image/gif',
+        };
+        res.writeHead(200, {
+          'Content-Type': mimeMap[ext] ?? 'application/octet-stream',
+          'Content-Length': String(buffer.length),
+          'x-inlay-ext': ext,
+          'x-inlay-type': upstream.headers.get('x-inlay-type') ?? 'image',
+          'x-inlay-width': upstream.headers.get('x-inlay-width') ?? '0',
+          'x-inlay-height': upstream.headers.get('x-inlay-height') ?? '0',
+          'x-inlay-name': upstream.headers.get('x-inlay-name') ?? '',
+          'Cache-Control': 'public, max-age=86400',
+        });
+        res.end(buffer);
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : 'unknown error';
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: message }));
+      });
+    return;
+  }
+
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'not found' }));
 }

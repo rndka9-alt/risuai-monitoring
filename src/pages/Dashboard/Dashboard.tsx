@@ -7,6 +7,7 @@ import { MetricsPanel } from './components/MetricsPanel';
 import { ActiveStreams } from './components/ActiveStreams';
 import { SearchbarIndex } from './components/SearchbarIndex';
 import { SqliteBrowser } from './components/SqliteBrowser';
+import { InlayGallery } from './components/InlayGallery';
 import type { ProxyName } from '@/types';
 
 function DashboardTab() {
@@ -41,6 +42,14 @@ function WithSqliteTab() {
   );
 }
 
+function RemoteInlayTab() {
+  return (
+    <main className="flex-1 overflow-hidden">
+      <InlayGallery />
+    </main>
+  );
+}
+
 function PlaceholderTab({ proxy }: { proxy: ProxyName }) {
   return (
     <main className="flex-1 flex items-center justify-center">
@@ -61,6 +70,7 @@ function TabContent({ activeProxy }: { activeProxy: ProxyName | null }) {
   if (activeProxy === null) return <DashboardTab />;
   if (activeProxy === 'sync') return <SyncTab />;
   if (activeProxy === 'with-sqlite') return <WithSqliteTab />;
+  if (activeProxy === 'remote-inlay') return <RemoteInlayTab />;
   if (activeProxy === 'setting-searchbar') return <SearchbarTab />;
   return <PlaceholderTab proxy={activeProxy} />;
 }
