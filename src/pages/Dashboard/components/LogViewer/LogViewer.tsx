@@ -66,7 +66,7 @@ export function LogViewer({ logs, connected }: LogViewerProps) {
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    setAutoScroll(scrollHeight - scrollTop - clientHeight < 50);
+    setAutoScroll(scrollHeight - scrollTop - clientHeight < 300);
   };
 
   return (
